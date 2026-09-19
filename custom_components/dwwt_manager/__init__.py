@@ -15,7 +15,9 @@ from .const import (
     CONF_PUMP_DEVICE,
     CONF_PUMP_ENTITY,
     CONF_PUMP_POWER_SENSOR,
+    CONF_SCHEDULES,
     DOMAIN,
+    LEGACY_MODE_MAP,
     PLATFORMS,
 )
 from .device_resolver import (
@@ -55,41 +57,48 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate entity-based equipment assignments to stable device ids."""
-    if entry.version >= 2:
-        return True
-
+    """Migrate device assignments and beta5 operating-mode schedules."""
     data = dict(entry.data)
-    mappings = (
-        (CONF_BLOWER_DEVICE, (CONF_BLOWER_ENTITY,)),
-        (CONF_PUMP_DEVICE, (CONF_PUMP_POWER_SENSOR, CONF_PUMP_ENTITY)),
-        (CONF_INLET_DEVICE, (CONF_INLET_POWER_SENSOR, CONF_INLET_ENTITY)),
-    )
-    for device_key, entity_keys in mappings:
-        device_id = None
-        for entity_key in entity_keys:
-            device_id = async_device_id_from_entity(hass, data.get(entity_key))
+    options = dict(entry.options)
+    version = entry.version
+
+    if version < 2:
+        mappings = (
+            (CONF_BLOWER_DEVICE, (CONF_BLOWER_ENTITY,)),
+            (CONF_PUMP_DEVICE, (CONF_PUMP_POWER_SENSOR, CONF_PUMP_ENTITY)),
+            (CONF_INLET_DEVICE, (CONF_INLET_POWER_SENSOR, CONF_INLET_ENTITY)),
+        )
+        for device_key, entity_keys in mappings:
+            device_id = next(
+                (value for key in entity_keys if (value := async_device_id_from_entity(hass, data.get(key)))),
+                None,
+            )
             if device_id:
-                break
-        if device_id:
-            data[device_key] = device_id
-        elif device_key != CONF_INLET_DEVICE:
-            _LOGGER.error("Cannot migrate %s: source entity has no registered device", device_key)
-            return False
+                data[device_key] = device_id
+            elif device_key != CONF_INLET_DEVICE:
+                _LOGGER.error("Cannot migrate %s: source entity has no registered device", device_key)
+                return False
+        for key in (CONF_BLOWER_ENTITY, CONF_PUMP_ENTITY, CONF_PUMP_POWER_SENSOR, CONF_INLET_ENTITY, CONF_INLET_POWER_SENSOR):
+            data.pop(key, None)
+        version = 2
 
-    for key in (
-        CONF_BLOWER_ENTITY,
-        CONF_PUMP_ENTITY,
-        CONF_PUMP_POWER_SENSOR,
-        CONF_INLET_ENTITY,
-        CONF_INLET_POWER_SENSOR,
-    ):
-        data.pop(key, None)
+    if version < 3:
+        for container in (data, options):
+            schedules = container.get(CONF_SCHEDULES)
+            if not isinstance(schedules, dict):
+                continue
+            migrated = dict(schedules)
+            for old_id, new_mode in LEGACY_MODE_MAP.items():
+                if old_id in schedules and new_mode.value not in migrated:
+                    # Copy the exact user values; never replace them with new defaults.
+                    migrated[new_mode.value] = dict(schedules[old_id])
+                migrated.pop(old_id, None)
+            container[CONF_SCHEDULES] = migrated
+        version = 3
 
-    hass.config_entries.async_update_entry(entry, data=data, version=2)
-    _LOGGER.info("Migrated DWWT Manager config entry %s to device selection", entry.entry_id)
+    hass.config_entries.async_update_entry(entry, data=data, options=options, version=version)
+    _LOGGER.info("Migrated DWWT Manager config entry %s to version %s", entry.entry_id, version)
     return True
-
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)

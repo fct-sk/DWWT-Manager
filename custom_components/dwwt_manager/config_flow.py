@@ -56,7 +56,7 @@ HOUSEHOLD_SCHEMA = vol.Schema({
 BLOWER_SCHEMA = vol.Schema({
     vol.Required(CONF_BLOWER_DEVICE): _device(),
     vol.Optional(CONF_BLOWER_POWER, default=0): _num(),
-    vol.Optional(CONF_BLOWER_AIRFLOW, default=0): _num(),
+    vol.Optional(CONF_BLOWER_AIRFLOW, default=60): _num(),
     vol.Optional(CONF_BLOWER_PRESSURE, default=0): _num(),
 })
 PUMP_SCHEMA = vol.Schema({
@@ -70,6 +70,13 @@ OPTIONAL_SCHEMA = vol.Schema({
     vol.Optional(CONF_ALARM_ENTITY): _entity(["alarm_control_panel"]),
     vol.Required(CONF_AWAY_TIMEOUT, default=72): _num(1, 8760, 1),
 })
+METHOD_SCHEMA = vol.Schema({
+    vol.Required(CONF_AERATION_CONFIGURATION, default=AerationConfiguration.MANUAL.value): SelectSelector(SelectSelectorConfig(options=[AerationConfiguration.MANUAL.value, AerationConfiguration.AUTOMATIC.value], mode=SelectSelectorMode.DROPDOWN, translation_key="aeration_configuration")),
+})
+MODE_SCHEMA = vol.Schema({
+    vol.Required(CONF_MODE_SELECTION, default=ModeSelection.AUTO.value): SelectSelector(SelectSelectorConfig(options=[mode.value for mode in ModeSelection], mode=SelectSelectorMode.DROPDOWN, translation_key="mode_selection")),
+    vol.Required(CONF_MANUAL_MODE, default=OperatingMode.NORMAL.value): SelectSelector(SelectSelectorConfig(options=[mode.value for mode in OperatingMode], mode=SelectSelectorMode.DROPDOWN, translation_key="operating_mode")),
+})
 AUTO_SCHEMA = vol.Schema({
     vol.Required(CONF_USE_ALARM, default=True): BooleanSelector(),
     vol.Required(CONF_USE_PUMP_ACTIVITY, default=True): BooleanSelector(),
@@ -78,6 +85,7 @@ AUTO_SCHEMA = vol.Schema({
     vol.Required(CONF_MEDIUM_VOLUME_DAY, default=100): _num(0, 100000, 1),
     vol.Required(CONF_HIGH_VOLUME_DAY, default=250): _num(0, 100000, 1),
     vol.Required(CONF_INACTIVITY_TIMEOUT, default=24): _num(1, 8760, 1),
+    vol.Required(CONF_AUTO_STABILIZATION, default=10): _num(0, 180, 1),
 })
 
 
@@ -97,7 +105,7 @@ def pack_schedules(values: dict[str, Any]) -> dict[str, dict[str, int]]:
 
 
 class DwwtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 2
+    VERSION = 3
 
     def __init__(self) -> None:
         self._data: dict[str, Any] = {}
@@ -114,7 +122,16 @@ class DwwtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 async_resolve_device(self.hass, user_input[CONF_BLOWER_DEVICE], DeviceRole.BLOWER)
             except DeviceResolutionError as err:
                 return self.async_show_form(step_id="blower", data_schema=BLOWER_SCHEMA, errors={"base": err.translation_key})
-        return await self._step("blower", BLOWER_SCHEMA, user_input, "pump")
+        return await self._step("blower", BLOWER_SCHEMA, user_input, "method")
+
+    async def async_step_method(self, user_input=None) -> ConfigFlowResult:
+        if user_input is not None and user_input[CONF_AERATION_CONFIGURATION] == AerationConfiguration.AUTOMATIC.value:
+            if float(self._data.get(CONF_BLOWER_AIRFLOW, 0)) <= 0:
+                return self.async_show_form(step_id="method", data_schema=METHOD_SCHEMA, errors={"base": "airflow_required"})
+        return await self._step("method", METHOD_SCHEMA, user_input, "mode_selection")
+
+    async def async_step_mode_selection(self, user_input=None) -> ConfigFlowResult:
+        return await self._step("mode_selection", MODE_SCHEMA, user_input, "pump")
 
     async def async_step_pump(self, user_input=None) -> ConfigFlowResult:
         if user_input is not None:
@@ -199,6 +216,7 @@ class DwwtOptionsFlow(OptionsFlowWithReload):
             vol.Required(CONF_MEDIUM_VOLUME_DAY): _num(),
             vol.Required(CONF_HIGH_VOLUME_DAY): _num(),
             vol.Required(CONF_INACTIVITY_TIMEOUT): _num(1, 8760, 1),
+            vol.Required(CONF_AUTO_STABILIZATION): _num(0, 180, 1),
             vol.Required(CONF_VOLUME_PER_CYCLE): _num(0, 100000, 0.1),
             vol.Required(CONF_PUMP_POWER_THRESHOLD): _num(),
             vol.Required(CONF_USE_ALARM): BooleanSelector(),

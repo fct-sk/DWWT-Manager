@@ -4,13 +4,13 @@
     "step": {
       "user": {
         "title": "Čistiareň",
-        "description": "Základné údaje a projektovaná kapacita. EO je zjednodušený parameter zaťaženia, nie počet obyvateľov.",
+        "description": "Základné údaje a projektovaná kapacita ČOV. Nominálne EO vyjadruje projektovanú kapacitu, nie aktuálny počet obyvateľov ani aktuálne zaťaženie.",
         "data": {
           "name": "Názov",
           "manufacturer": "Výrobca (voliteľné)",
           "model": "Model (voliteľné)",
           "plant_type": "Typ čistiarne",
-          "nominal_eo": "Nominálna kapacita (EO)",
+          "nominal_eo": "Projektovaná/nominálna kapacita ČOV (EO)",
           "tank_volume_l": "Objem nádrže (L)"
         },
         "data_description": {
@@ -18,21 +18,21 @@
           "manufacturer": "Voliteľný výrobca čistiarne; hodnota je iba informatívna.",
           "model": "Voliteľné modelové označenie výrobcu; hodnota je iba informatívna.",
           "plant_type": "Všeobecný typ procesu. Táto voľba automaticky neurčuje program dúchadla.",
-          "nominal_eo": "Projektovaná kapacita podľa výrobcu v ekvivalentných obyvateľoch (EO); nejde o počet obyvateľov.",
+          "nominal_eo": "Projektovaná/nominálna kapacita ČOV podľa výrobcu v ekvivalentných obyvateľoch (EO). Nejde o aktuálny počet obyvateľov ani aktuálne zaťaženie. Aktuálne relatívne zaťaženie vyjadruje prevádzkový režim nezávisle od tejto kapacity.",
           "tank_volume_l": "Celkový objem nádrže čistiarne v litroch; slúži ako údaj o zariadení."
         }
       },
       "household": {
         "title": "Domácnosť a zaťaženie",
-        "description": "Počet obyvateľov a odhad EO sú samostatné hodnoty. Nula znamená neznámu hodnotu.",
+        "description": "Počet obyvateľov a odhad aktuálneho zaťaženia v EO sú oddelené od nominálnej projektovanej kapacity ČOV. Nula znamená neznámu hodnotu.",
         "data": {
           "occupants": "Počet obyvateľov",
           "estimated_eo": "Odhad aktuálneho zaťaženia (EO)",
           "load_factor": "Ručný faktor zaťaženia"
         },
         "data_description": {
-          "occupants": "Skutočný počet pravidelných obyvateľov. Nula znamená neznámu hodnotu; údaj je oddelený od EO.",
-          "estimated_eo": "Voliteľný odhad aktuálneho organického alebo hydraulického zaťaženia vyjadrený v EO. Nula znamená neznámu hodnotu.",
+          "occupants": "Skutočný počet pravidelných obyvateľov. Nula znamená neznámu hodnotu. Nenahrádza nominálnu kapacitu ČOV (nominal_eo).",
+          "estimated_eo": "Voliteľný odhad aktuálneho organického alebo hydraulického zaťaženia v EO. Nula znamená neznámu hodnotu. Je oddelený od nominálnej kapacity ČOV a výpočet prevzdušňovania V1 ho nepoužíva.",
           "load_factor": "Voliteľný násobiteľ relatívneho zaťaženia. Verzia 0.1 ho uchováva pre budúce modely a zatiaľ ho v AUTO nepoužíva."
         }
       },
@@ -79,7 +79,7 @@
         "data_description": {
           "inlet_device_id": "Vyberte celé zariadenie zásuvky prítokového čerpadla. Integrácia automaticky použije jeho výkonový senzor a čerpadlo neovláda.",
           "alarm_entity": "Voliteľný alarm používaný režimom AUTO na rozlíšenie noci, krátkej neprítomnosti a dlhšej neprítomnosti.",
-          "away_timeout_h": "Nepretržitý čas stavu Zapnuté mimo domu, po ktorom AUTO prepne z režimu Návšteva na Dovolenka."
+          "away_timeout_h": "Nepretržitý čas stavu Zapnuté mimo domu, po ktorom AUTO prepne z režimu Nízke zaťaženie na Eko / Dovolenka."
         }
       },
       "auto": {
@@ -92,41 +92,65 @@
           "high_starts_hour": "Vysoké zaťaženie (štarty/h)",
           "medium_volume_day_l": "Bežný objem za 24 h (L)",
           "high_volume_day_l": "Vysoký objem za 24 h (L)",
-          "inactivity_timeout_h": "Čas nečinnosti (h)"
+          "inactivity_timeout_h": "Čas nečinnosti (h)",
+          "auto_stabilization_min": "Stabilizácia AUTO (minúty)"
         },
         "data_description": {
           "use_alarm": "Povolí, aby stavy a prechody alarmu ovplyvňovali výber režimu AUTO.",
           "use_pump_activity": "Povolí, aby počet nedávnych potvrdených štartov čerpadla ovplyvňoval režim AUTO.",
           "use_volume": "Povolí, aby odhad odčerpaného objemu za posledných 24 hodín ovplyvňoval režim AUTO.",
           "high_starts_hour": "Tento počet potvrdených štartov za jednu hodinu zvolí režim Plný dom, ak sa používa aktivita čerpadla.",
-          "medium_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Pobyt, ak nemá prednosť iné pravidlo.",
-          "high_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Plný dom. Hodnota nesmie byť nižšia než prah bežného zaťaženia.",
-          "inactivity_timeout_h": "Po tomto počte hodín bez potvrdeného štartu čerpadla môže AUTO zvoliť Dovolenku."
+          "medium_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Normálnu prevádzku, ak nemá prednosť iné pravidlo.",
+          "high_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Vyššie zaťaženie. Hodnota nesmie byť nižšia než prah bežného zaťaženia.",
+          "inactivity_timeout_h": "Po tomto počte hodín bez potvrdeného štartu čerpadla môže AUTO zvoliť Eko / Dovolenku.",
+          "auto_stabilization_min": "Kandidát odvodený od zaťaženia musí zostať stabilný tento čas, kým AUTO prepne režim."
         }
       },
       "schedules": {
         "title": "Programy dúchadla",
         "description": "Predvolené hodnoty vychádzajú z jednej aplikácie ECOkocka; overte ich pre svoju čistiareň.",
         "data": {
-          "visit_on": "Návšteva ZAP (min)",
-          "visit_off": "Návšteva VYP (min)",
-          "residence_on": "Pobyt ZAP (min)",
-          "residence_off": "Pobyt VYP (min)",
-          "fullhouse_on": "Plný dom ZAP (min)",
-          "fullhouse_off": "Plný dom VYP (min)",
-          "holiday_on": "Dovolenka ZAP (min)",
-          "holiday_off": "Dovolenka VYP (min)"
+          "normal_off": "Normálna prevádzka VYP (min)",
+          "eco_on": "Eko / Dovolenka ZAP (min)",
+          "eco_off": "Eko / Dovolenka VYP (min)",
+          "heavy_load_off": "Vyššie zaťaženie VYP (min)",
+          "low_load_on": "Nízke zaťaženie ZAP (min)",
+          "low_load_off": "Nízke zaťaženie VYP (min)",
+          "heavy_load_on": "Vyššie zaťaženie ZAP (min)",
+          "normal_on": "Normálna prevádzka ZAP (min)"
         },
         "data_description": {
-          "visit_on": "Počet minút zapnutia dúchadla v každom cykle režimu Návšteva.",
-          "visit_off": "Počet minút vypnutia dúchadla v každom cykle režimu Návšteva.",
-          "residence_on": "Počet minút zapnutia dúchadla v každom cykle režimu Pobyt.",
-          "residence_off": "Počet minút vypnutia dúchadla v každom cykle režimu Pobyt.",
-          "fullhouse_on": "Počet minút zapnutia dúchadla v každom cykle režimu Plný dom.",
-          "fullhouse_off": "Počet minút vypnutia dúchadla v každom cykle režimu Plný dom.",
-          "holiday_on": "Počet minút zapnutia dúchadla v každom cykle režimu Dovolenka.",
-          "holiday_off": "Počet minút vypnutia dúchadla v každom cykle režimu Dovolenka."
+          "normal_off": "Počet minút vypnutia dúchadla v každom cykle Normálnej prevádzky.",
+          "eco_on": "Počet minút zapnutia dúchadla v každom cykle Eko / Dovolenka.",
+          "eco_off": "Počet minút vypnutia dúchadla v každom cykle Eko / Dovolenka.",
+          "heavy_load_off": "Počet minút vypnutia dúchadla v každom cykle Vyššieho zaťaženia.",
+          "low_load_on": "Počet minút zapnutia dúchadla v každom cykle Nízkeho zaťaženia.",
+          "low_load_off": "Počet minút vypnutia dúchadla v každom cykle Nízkeho zaťaženia.",
+          "heavy_load_on": "Počet minút zapnutia dúchadla v každom cykle Vyššieho zaťaženia.",
+          "normal_on": "Počet minút zapnutia dúchadla v každom cykle Normálnej prevádzky."
         }
+      },
+      "method": {
+        "data": {
+          "aeration_configuration": "Nastavenie prevzdušňovania"
+        },
+        "data_description": {
+          "aeration_configuration": "Ručné nastavenie používa vaše štyri harmonogramy. Automatické používa objem nádrže, prietok dúchadla a nominálnu kapacitu ČOV (EO). Režim nezávisle vyjadruje relatívne zaťaženie: Normálna prevádzka 1,0, Nízke zaťaženie 1/3, Vyššie zaťaženie 1,25; Eko používa samostatný základ 10/470 minút. Strop 420 minút ZAP je technický/heuristický limit, nie technologicky overená hranica."
+        },
+        "title": "Spôsob nastavenia prevzdušňovania",
+        "description": "Vyberte, odkiaľ sa získajú časy zapnutia a vypnutia dúchadla. Konfigurácia výrobcu je architektonicky pripravená, ale zatiaľ nie je dostupná."
+      },
+      "mode_selection": {
+        "data": {
+          "mode_selection": "Spôsob výberu režimu",
+          "manual_operating_mode": "Ručný prevádzkový režim"
+        },
+        "data_description": {
+          "mode_selection": "MANUAL zachová vybraný režim; AUTO vyhodnocuje alarm, aktivitu čerpadla a odhadovaný objem.",
+          "manual_operating_mode": "Režim používaný pri nastavení MANUAL."
+        },
+        "title": "Výber prevádzkového režimu",
+        "description": "Vyberte ručné nastavenie jedného zo štyroch pevných režimov alebo automatický výber podľa signálov z Home Assistant."
       }
     },
     "error": {
@@ -135,7 +159,8 @@
       "blower_switch_missing": "Zariadenie dúchadla nemá entitu switch. Vyberte zariadenie s ovládateľným spínačom.",
       "blower_switch_ambiguous": "Zariadenie dúchadla má viac spínačov. Vyberte samostatnú zásuvku s jedným spínačom.",
       "pump_power_missing": "Zariadenie čerpadla nemá výkonový senzor s device_class power.",
-      "pump_power_ambiguous": "Zariadenie čerpadla má viac výkonových senzorov. Vyberte samostatnú zásuvku s jedným výkonovým senzorom."
+      "pump_power_ambiguous": "Zariadenie čerpadla má viac výkonových senzorov. Vyberte samostatnú zásuvku s jedným výkonovým senzorom.",
+      "airflow_required": "Automatické prevzdušňovanie vyžaduje prietok dúchadla väčší ako nula."
     },
     "flow_title": "{name}"
   },
@@ -162,43 +187,51 @@
           "pump_power_threshold_w": "Prah príkonu čerpadla (W)",
           "use_alarm": "Používať stav alarmu",
           "use_pump_activity": "Používať aktivitu čerpadla",
-          "use_volume": "Používať odhad objemu"
+          "use_volume": "Používať odhad objemu",
+          "auto_stabilization_min": "Stabilizácia AUTO (minúty)",
+          "aeration_configuration": "Nastavenie prevzdušňovania",
+          "mode_selection": "Spôsob výberu režimu",
+          "manual_operating_mode": "Ručný prevádzkový režim"
         },
         "data_description": {
-          "away_timeout_h": "Nepretržitý čas stavu Zapnuté mimo domu, po ktorom AUTO prepne z režimu Návšteva na Dovolenka.",
+          "away_timeout_h": "Nepretržitý čas stavu Zapnuté mimo domu, po ktorom AUTO prepne z režimu Nízke zaťaženie na Eko / Dovolenka.",
           "high_starts_hour": "Tento počet potvrdených štartov za jednu hodinu zvolí režim Plný dom, ak sa používa aktivita čerpadla.",
-          "medium_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Pobyt, ak nemá prednosť iné pravidlo.",
-          "high_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Plný dom. Hodnota nesmie byť nižšia než prah bežného zaťaženia.",
-          "inactivity_timeout_h": "Po tomto počte hodín bez potvrdeného štartu čerpadla môže AUTO zvoliť Dovolenku.",
+          "medium_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Normálnu prevádzku, ak nemá prednosť iné pravidlo.",
+          "high_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Vyššie zaťaženie. Hodnota nesmie byť nižšia než prah bežného zaťaženia.",
+          "inactivity_timeout_h": "Po tomto počte hodín bez potvrdeného štartu čerpadla môže AUTO zvoliť Eko / Dovolenku.",
           "volume_per_cycle_l": "Odhad litrov odčerpaných pri každom potvrdenom štarte. Ide o odhad, nie priame meranie prietoku.",
           "pump_power_threshold_w": "Čerpadlo sa považuje za spustené pri príkone rovnajúcom sa alebo vyššom než táto hodnota. Prah nastavte nad pohotovostný šum a pod stabilný prevádzkový príkon.",
           "use_alarm": "Povolí, aby stavy a prechody alarmu ovplyvňovali výber režimu AUTO.",
           "use_pump_activity": "Povolí, aby počet nedávnych potvrdených štartov čerpadla ovplyvňoval režim AUTO.",
-          "use_volume": "Povolí, aby odhad odčerpaného objemu za posledných 24 hodín ovplyvňoval režim AUTO."
+          "use_volume": "Povolí, aby odhad odčerpaného objemu za posledných 24 hodín ovplyvňoval režim AUTO.",
+          "auto_stabilization_min": "Čas stability kandidáta odvodeného od zaťaženia pred prepnutím režimu AUTO.",
+          "aeration_configuration": "Ručné harmonogramy alebo transparentný automatický výpočet V1. Konfigurácia výrobcu pribudne neskôr.",
+          "mode_selection": "MANUAL zachová vybraný režim; AUTO ho vyberá z povolených signálov.",
+          "manual_operating_mode": "Režim používaný pri nastavení MANUAL."
         }
       },
       "schedules": {
         "title": "Programy dúchadla",
         "description": "Nastavte čas zapnutia a vypnutia dúchadla pre každý režim. Hodnoty overte podľa pokynov výrobcu čistiarne.",
         "data": {
-          "visit_on": "Návšteva ZAP (min)",
-          "visit_off": "Návšteva VYP (min)",
-          "residence_on": "Pobyt ZAP (min)",
-          "residence_off": "Pobyt VYP (min)",
-          "fullhouse_on": "Plný dom ZAP (min)",
-          "fullhouse_off": "Plný dom VYP (min)",
-          "holiday_on": "Dovolenka ZAP (min)",
-          "holiday_off": "Dovolenka VYP (min)"
+          "normal_off": "Normálna prevádzka VYP (min)",
+          "eco_on": "Eko / Dovolenka ZAP (min)",
+          "eco_off": "Eko / Dovolenka VYP (min)",
+          "heavy_load_off": "Vyššie zaťaženie VYP (min)",
+          "low_load_on": "Nízke zaťaženie ZAP (min)",
+          "low_load_off": "Nízke zaťaženie VYP (min)",
+          "heavy_load_on": "Vyššie zaťaženie ZAP (min)",
+          "normal_on": "Normálna prevádzka ZAP (min)"
         },
         "data_description": {
-          "visit_on": "Počet minút zapnutia dúchadla v každom cykle režimu Návšteva.",
-          "visit_off": "Počet minút vypnutia dúchadla v každom cykle režimu Návšteva.",
-          "residence_on": "Počet minút zapnutia dúchadla v každom cykle režimu Pobyt.",
-          "residence_off": "Počet minút vypnutia dúchadla v každom cykle režimu Pobyt.",
-          "fullhouse_on": "Počet minút zapnutia dúchadla v každom cykle režimu Plný dom.",
-          "fullhouse_off": "Počet minút vypnutia dúchadla v každom cykle režimu Plný dom.",
-          "holiday_on": "Počet minút zapnutia dúchadla v každom cykle režimu Dovolenka.",
-          "holiday_off": "Počet minút vypnutia dúchadla v každom cykle režimu Dovolenka."
+          "normal_off": "Počet minút vypnutia dúchadla v každom cykle Normálnej prevádzky.",
+          "eco_on": "Počet minút zapnutia dúchadla v každom cykle Eko / Dovolenka.",
+          "eco_off": "Počet minút vypnutia dúchadla v každom cykle Eko / Dovolenka.",
+          "heavy_load_off": "Počet minút vypnutia dúchadla v každom cykle Vyššieho zaťaženia.",
+          "low_load_on": "Počet minút zapnutia dúchadla v každom cykle Nízkeho zaťaženia.",
+          "low_load_off": "Počet minút vypnutia dúchadla v každom cykle Nízkeho zaťaženia.",
+          "heavy_load_on": "Počet minút zapnutia dúchadla v každom cykle Vyššieho zaťaženia.",
+          "normal_on": "Počet minút zapnutia dúchadla v každom cykle Normálnej prevádzky."
         }
       },
       "devices": {
@@ -227,14 +260,27 @@
   },
   "entity": {
     "select": {
-      "operating_mode": {
-        "name": "Prevádzkový režim",
+      "mode_selection": {
+        "name": "Výber prevádzkového režimu",
         "state": {
-          "visit": "Návšteva",
-          "residence": "Pobyt",
-          "fullhouse": "Plný dom",
-          "holiday": "Dovolenka",
-          "auto": "AUTO"
+          "auto": "AUTO",
+          "manual": "MANUAL"
+        }
+      },
+      "manual_operating_mode": {
+        "name": "Ručný prevádzkový režim",
+        "state": {
+          "eco": "Eko / Dovolenka",
+          "normal": "Normálna prevádzka",
+          "heavy_load": "Vyššie zaťaženie",
+          "low_load": "Nízke zaťaženie"
+        }
+      },
+      "aeration_configuration": {
+        "name": "Nastavenie prevzdušňovania",
+        "state": {
+          "automatic": "Automatické",
+          "manual": "Ručné"
         }
       }
     },
@@ -258,10 +304,10 @@
       "active_mode": {
         "name": "Aktívny režim",
         "state": {
-          "visit": "Návšteva",
-          "residence": "Pobyt",
-          "fullhouse": "Plný dom",
-          "holiday": "Dovolenka"
+          "eco": "Eko / Dovolenka",
+          "normal": "Normálna prevádzka",
+          "heavy_load": "Vyššie zaťaženie",
+          "low_load": "Nízke zaťaženie"
         }
       },
       "auto_reason": {
@@ -308,6 +354,12 @@
       },
       "last_mode_change": {
         "name": "Posledná zmena režimu"
+      },
+      "manufacturer_configuration": {
+        "name": "Konfigurácia výrobcu (pripravujeme)",
+        "state": {
+          "coming_soon": "Pripravujeme"
+        }
       }
     }
   },
@@ -316,6 +368,26 @@
       "options": {
         "aerated": "Prevzdušňovacia čistiareň",
         "other": "Iný typ čistiarne"
+      }
+    },
+    "aeration_configuration": {
+      "options": {
+        "automatic": "Automatické",
+        "manual": "Ručné"
+      }
+    },
+    "mode_selection": {
+      "options": {
+        "auto": "AUTO",
+        "manual": "MANUAL"
+      }
+    },
+    "operating_mode": {
+      "options": {
+        "eco": "Eko / Dovolenka",
+        "normal": "Normálna prevádzka",
+        "heavy_load": "Vyššie zaťaženie",
+        "low_load": "Nízke zaťaženie"
       }
     }
   }

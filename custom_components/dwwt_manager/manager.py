@@ -15,14 +15,15 @@ from homeassistant.helpers.event import async_track_state_change_event, async_tr
 from homeassistant.util import dt as dt_util
 
 from .const import (
-    CONF_ALARM_ENTITY, CONF_AWAY_TIMEOUT, CONF_BLOWER_ENTITY, CONF_HIGH_STARTS_HOUR,
+    CONF_AERATION_CONFIGURATION, CONF_ALARM_ENTITY, CONF_AUTO_STABILIZATION, CONF_AWAY_TIMEOUT, CONF_BLOWER_AIRFLOW, CONF_BLOWER_ENTITY, CONF_HIGH_STARTS_HOUR,
     CONF_HIGH_VOLUME_DAY, CONF_INACTIVITY_TIMEOUT, CONF_INLET_ENTITY, CONF_INLET_POWER_SENSOR, CONF_MEDIUM_VOLUME_DAY,
     CONF_PUMP_ENTITY, CONF_PUMP_MIN_RUNTIME, CONF_PUMP_POWER_SENSOR,
-    CONF_PUMP_POWER_THRESHOLD, CONF_SCHEDULES, CONF_USE_ALARM, CONF_USE_PUMP_ACTIVITY,
-    CONF_USE_VOLUME, CONF_VOLUME_PER_CYCLE, DEFAULTS, DEFAULT_SCHEDULES, MANUAL_MODES,
+    CONF_MANUAL_MODE, CONF_MODE_SELECTION, CONF_NOMINAL_EO, CONF_PUMP_POWER_THRESHOLD, CONF_SCHEDULES, CONF_TANK_VOLUME, CONF_USE_ALARM, CONF_USE_PUMP_ACTIVITY,
+    CONF_USE_VOLUME, CONF_VOLUME_PER_CYCLE, AerationConfiguration, DEFAULTS, ModeSelection,
     OperatingMode, SIGNAL_UPDATE,
 )
-from .models import PersistentState, PumpCycle, cycle_count, decide_auto_mode, volume_for_period, volume_in_window
+from .aeration import AerationContext, HeuristicAerationStrategyV1, ManualAerationStrategy, NoHouseholdAdaptation, calculate_final_schedule
+from .models import PersistentState, PumpCycle, cycle_count, decide_auto_mode, stabilize_auto_decision, volume_for_period, volume_in_window
 from .store import DwwtStore
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,6 +47,12 @@ class DwwtManager:
 
     async def async_start(self) -> None:
         self.state = await self.store.load()
+        if self.state.model_version == 0:
+            self.state.aeration_configuration = AerationConfiguration(self.config[CONF_AERATION_CONFIGURATION])
+            self.state.mode_selection = ModeSelection(self.config[CONF_MODE_SELECTION])
+            self.state.manual_mode = OperatingMode(self.config[CONF_MANUAL_MODE])
+            self.state.active_mode = self.state.manual_mode
+        self.state.model_version = 2
         monitored = [x for x in (
             self.config.get(CONF_PUMP_POWER_SENSOR), self.config.get(CONF_PUMP_ENTITY),
             self.config.get(CONF_INLET_POWER_SENSOR), self.config.get(CONF_INLET_ENTITY),
@@ -190,13 +197,13 @@ class DwwtManager:
         await self.async_recalculate_auto()
 
     async def async_recalculate_auto(self, alarm_state: str | None = None, now: datetime | None = None) -> None:
-        if self.state.requested_mode != OperatingMode.AUTO:
+        if self.state.mode_selection != ModeSelection.AUTO:
             return
         now = now or dt_util.utcnow()
         if alarm_state is None and self.config.get(CONF_ALARM_ENTITY):
             alarm = self.hass.states.get(self.config[CONF_ALARM_ENTITY])
             alarm_state = alarm.state if alarm else None
-        mode, reason = decide_auto_mode(
+        decision = decide_auto_mode(
             now=now, alarm_state=alarm_state, previous_alarm_state=self.state.last_alarm_state,
             away_since=self.state.away_since, starts_hour=self.starts(1, now), starts_6h=self.starts(6, now),
             volume_day=self.volume_window(24, now), use_alarm=bool(self.config[CONF_USE_ALARM]),
@@ -205,14 +212,40 @@ class DwwtManager:
             medium_volume_day=float(self.config[CONF_MEDIUM_VOLUME_DAY]), high_volume_day=float(self.config[CONF_HIGH_VOLUME_DAY]),
             inactivity_timeout_h=float(self.config[CONF_INACTIVITY_TIMEOUT]), last_activity=self.last_activity,
         )
+        mode, pending, pending_since, reason = stabilize_auto_decision(
+            decision=decision, current=self.state.active_mode,
+            pending_mode=self.state.pending_auto_mode, pending_since=self.state.pending_auto_since,
+            now=now, delay_minutes=float(self.config[CONF_AUTO_STABILIZATION]),
+        )
+        self.state.pending_auto_mode = pending
+        self.state.pending_auto_since = pending_since
         self._set_active_mode(mode, reason, now)
 
-    async def async_select_mode(self, mode: OperatingMode) -> None:
-        self.state.requested_mode = mode
-        if mode == OperatingMode.AUTO:
+    async def async_select_mode_selection(self, selection: ModeSelection) -> None:
+        self.state.mode_selection = selection
+        self.state.pending_auto_mode = None
+        self.state.pending_auto_since = None
+        if selection == ModeSelection.AUTO:
             await self.async_recalculate_auto()
         else:
+            self._set_active_mode(self.state.manual_mode, f"Manual mode: {self.state.manual_mode.value}", dt_util.utcnow())
+        await self._save()
+        self._notify()
+
+    async def async_select_manual_mode(self, mode: OperatingMode) -> None:
+        self.state.manual_mode = mode
+        if self.state.mode_selection == ModeSelection.MANUAL:
             self._set_active_mode(mode, f"Manual mode: {mode.value}", dt_util.utcnow())
+        await self._save()
+        self._notify()
+
+    async def async_select_aeration_configuration(self, configuration: AerationConfiguration) -> None:
+        if configuration == AerationConfiguration.MANUFACTURER_CONFIGURATION:
+            raise ValueError("Manufacturer configuration is not available yet")
+        self.state.aeration_configuration = configuration
+        self.state.blower_phase_started = dt_util.utcnow()
+        self.state.blower_phase_deadline = None
+        self._restart_scheduler()
         await self._save()
         self._notify()
 
@@ -228,9 +261,17 @@ class DwwtManager:
 
     def schedule(self, mode: OperatingMode | None = None) -> tuple[int, int]:
         mode = mode or self.state.active_mode
-        custom = self.config.get(CONF_SCHEDULES, {}).get(mode.value, {})
-        default_on, default_off = DEFAULT_SCHEDULES[mode]
-        return int(custom.get("on", default_on)), int(custom.get("off", default_off))
+        context = AerationContext(
+            tank_volume_l=float(self.config[CONF_TANK_VOLUME]),
+            blower_airflow_l_min=float(self.config[CONF_BLOWER_AIRFLOW]),
+            nominal_eo=float(self.config[CONF_NOMINAL_EO]),
+        )
+        if self.state.aeration_configuration == AerationConfiguration.AUTOMATIC:
+            baseline = HeuristicAerationStrategyV1()
+        else:
+            baseline = ManualAerationStrategy(self.config.get(CONF_SCHEDULES, {}))
+        schedule = calculate_final_schedule(baseline, NoHouseholdAdaptation(), mode, context)
+        return schedule.on_minutes, schedule.off_minutes
 
     def _restart_scheduler(self) -> None:
         if self._scheduler_task:

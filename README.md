@@ -8,7 +8,7 @@ DWWT Manager is a UI-configured Home Assistant custom integration for monitoring
 
 - Multi-step Config Flow; no YAML, helpers, templates, or user automations required.
 - Separate design capacity (nominal EO), actual estimated EO, and occupant count.
-- Manual Visit, Residence, Fullhouse, and Holiday schedules plus transparent AUTO selection.
+- Four fixed modes (Normal operation, Low load, Higher load, and Eco / Holiday), with separate aeration configuration and MANUAL/AUTO mode selection.
 - Pump monitoring from a binary/switch state or, for float-controlled pumps, a power sensor threshold.
 - Persistent starts, lifetime estimated volume, calendar-period totals, and rolling 1/6/24-hour activity.
 - Restart-aware blower phase deadlines and persisted alarm-away timestamps.
@@ -33,7 +33,18 @@ The flow asks for:
 6. AUTO signals and thresholds.
 7. Editable ON/OFF durations for each manual schedule.
 
-The initial Visit 80/400, Residence 120/360, Fullhouse 240/240, and Holiday 10/470 minute values are configurable defaults based on one ECOkocka-style application. They are not universal recommendations.
+Manual ON/OFF values are configurable for all four modes. In automatic aeration V1, nominal_eo means the plant's rated/design capacity in equivalent inhabitants (EO), not current occupant count or current load. The occupants and estimated_eo fields are separate and do not enter the V1 calculation.
+
+Operating mode represents current relative load independently of nominal capacity: NORMAL uses factor 1.0, LOW_LOAD 1/3, and HEAVY_LOAD 1.25. ECO uses a separate fixed 10/470-minute baseline. The factors and scaling are V1 heuristic assumptions.
+
+For a 3 m3 tank and 60 L/min blower:
+
+- A plant rated at 6 nominal EO gives NORMAL 240/240, LOW_LOAD 80/400, HEAVY_LOAD 300/180, and ECO 10/470 minutes ON/OFF.
+- A plant rated at 2 nominal EO gives NORMAL 80/400 minutes ON/OFF.
+
+A 6-EO plant in LOW_LOAD and a 2-EO plant in NORMAL therefore produce the same schedule but remain distinct capacity/mode combinations in the data model.
+
+Automatic ON time is rounded to five-minute increments and clamped to 10–420 minutes; OFF is 480 minus ON. The 420-minute ceiling is a technical/heuristic limit, not a technologically validated boundary. These schedules are heuristic estimates.
 
 ### Pump detection and volume
 
@@ -62,12 +73,12 @@ Lifetime totals use recorder-compatible `total` state classes and are also store
 
 AUTO uses an ordered, documented heuristic:
 
-1. `armed_night` → Residence.
-2. `armed_away` shorter than the configured timeout → Visit; at/after it → Holiday.
-3. `armed_night → disarmed` stays Residence; `armed_away → disarmed` becomes Visit.
-4. Configured high starts/hour or high 24-hour estimated volume → Fullhouse.
-5. Configured normal 24-hour volume or recent starts → Residence.
-6. Configured inactivity → Holiday; otherwise low measured activity → Visit.
+1. `armed_night` → Normal operation.
+2. `armed_away` shorter than the configured timeout → Low load; at/after it → Eco / Holiday.
+3. `armed_night → disarmed` stays Normal operation; `armed_away → disarmed` becomes Low load.
+4. Configured high starts/hour or high 24-hour estimated volume → Higher load.
+5. Configured normal 24-hour volume or recent starts → Normal operation.
+6. Prolonged configured inactivity → Eco / Holiday; otherwise low measured activity → Low load. Load-driven changes must remain stable for the configured debounce window.
 
 Signals can be enabled independently. The AUTO reason sensor exposes the branch and observed value. Thresholds are application heuristics, not claims about biological treatment needs. Wi-Fi client counts are never used.
 

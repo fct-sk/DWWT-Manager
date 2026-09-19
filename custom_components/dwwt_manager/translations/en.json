@@ -5,13 +5,13 @@
     "step": {
       "user": {
         "title": "Treatment plant",
-        "description": "Basic plant and design-capacity information. EO is a design/load approximation, not occupant count.",
+        "description": "Basic plant and design-capacity information. Nominal EO is the rated plant capacity, not current occupant count or current load.",
         "data": {
           "name": "Name",
           "manufacturer": "Manufacturer (optional)",
           "model": "Model (optional)",
           "plant_type": "Plant type",
-          "nominal_eo": "Nominal design capacity (EO)",
+          "nominal_eo": "Nominal plant design capacity (EO)",
           "tank_volume_l": "Tank volume (L)"
         },
         "data_description": {
@@ -19,21 +19,21 @@
           "manufacturer": "Optional treatment-plant manufacturer; informational only.",
           "model": "Optional manufacturer model designation; informational only.",
           "plant_type": "Select the general process type. It does not automatically choose a blower schedule.",
-          "nominal_eo": "Manufacturer-rated design capacity in equivalent inhabitants (EO); this is not the occupant count.",
+          "nominal_eo": "Manufacturer-rated plant design capacity in equivalent inhabitants (EO). This is neither current occupant count nor current load. Operating mode represents current relative load independently of this capacity.",
           "tank_volume_l": "Total treatment-tank volume in liters; stored as plant information."
         }
       },
       "household": {
         "title": "Household and load",
-        "description": "Occupants and estimated EO are deliberately separate. Leave an unknown value at zero.",
+        "description": "Occupant count and estimated current load (EO) are separate from nominal plant design capacity. Leave an unknown value at zero.",
         "data": {
           "occupants": "Occupants",
           "estimated_eo": "Estimated current load (EO)",
           "load_factor": "Manual load factor"
         },
         "data_description": {
-          "occupants": "Actual number of regular occupants. Zero means unknown; it is kept separate from EO.",
-          "estimated_eo": "Optional estimate of the current organic/hydraulic load expressed as EO. Zero means unknown.",
+          "occupants": "Actual number of regular occupants. Zero means unknown. This does not replace nominal plant capacity (nominal_eo).",
+          "estimated_eo": "Optional estimate of current organic/hydraulic load in EO. Zero means unknown. This is separate from nominal plant capacity and is not used by the V1 aeration calculation.",
           "load_factor": "Optional manual multiplier describing relative load. Version 0.1 stores it for future load models and does not apply it to AUTO yet."
         }
       },
@@ -80,7 +80,7 @@
         "data_description": {
           "inlet_device_id": "Select the complete inlet-pump smart plug. The integration automatically uses its power sensor and does not control the pump.",
           "alarm_entity": "Optional alarm control panel used by AUTO to distinguish night, short absence and prolonged absence.",
-          "away_timeout_h": "Continuous armed-away duration after which AUTO changes from Visit to Holiday."
+          "away_timeout_h": "Continuous armed-away duration after which AUTO changes from Low load to Eco / Holiday."
         }
       },
       "auto": {
@@ -93,41 +93,65 @@
           "high_starts_hour": "High-load starts/hour",
           "medium_volume_day_l": "Normal-load volume/24 h (L)",
           "high_volume_day_l": "High-load volume/24 h (L)",
-          "inactivity_timeout_h": "Inactivity timeout (hours)"
+          "inactivity_timeout_h": "Inactivity timeout (hours)",
+          "auto_stabilization_min": "AUTO stabilization (minutes)"
         },
         "data_description": {
           "use_alarm": "Allow alarm states and transitions to influence AUTO mode selection.",
           "use_pump_activity": "Allow recent validated pump-start counts to influence AUTO mode selection.",
           "use_volume": "Allow estimated pumped volume over the last 24 hours to influence AUTO mode selection.",
-          "high_starts_hour": "This many validated starts within one hour selects Fullhouse when pump activity is enabled.",
-          "medium_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Residence unless a higher-priority rule applies.",
-          "high_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Fullhouse. It must not be lower than the normal-load threshold.",
-          "inactivity_timeout_h": "After this many hours without a validated pump start, AUTO may select Holiday."
+          "high_starts_hour": "This many validated starts within one hour selects Higher load when pump activity is enabled.",
+          "medium_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Normal operation unless a higher-priority rule applies.",
+          "high_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Higher load. It must not be lower than the normal-load threshold.",
+          "inactivity_timeout_h": "After this many hours without a validated pump start, AUTO may select Eco / Holiday.",
+          "auto_stabilization_min": "A load-driven candidate must remain stable for this long before AUTO changes mode. Prolonged absence and inactivity decisions are already time-qualified."
         }
       },
       "schedules": {
         "title": "Blower schedules",
         "description": "Defaults are inspired by one ECOkocka configuration and must be checked for your plant.",
         "data": {
-          "visit_on": "Visit ON (min)",
-          "visit_off": "Visit OFF (min)",
-          "residence_on": "Residence ON (min)",
-          "residence_off": "Residence OFF (min)",
-          "fullhouse_on": "Fullhouse ON (min)",
-          "fullhouse_off": "Fullhouse OFF (min)",
-          "holiday_on": "Holiday ON (min)",
-          "holiday_off": "Holiday OFF (min)"
+          "normal_off": "Normal operation OFF (min)",
+          "eco_on": "Eco / Holiday ON (min)",
+          "eco_off": "Eco / Holiday OFF (min)",
+          "heavy_load_off": "Higher load OFF (min)",
+          "low_load_on": "Low load ON (min)",
+          "low_load_off": "Low load OFF (min)",
+          "heavy_load_on": "Higher load ON (min)",
+          "normal_on": "Normal operation ON (min)"
         },
         "data_description": {
-          "visit_on": "Minutes the blower remains on during each Visit cycle.",
-          "visit_off": "Minutes the blower remains off during each Visit cycle.",
-          "residence_on": "Minutes the blower remains on during each Residence cycle.",
-          "residence_off": "Minutes the blower remains off during each Residence cycle.",
-          "fullhouse_on": "Minutes the blower remains on during each Fullhouse cycle.",
-          "fullhouse_off": "Minutes the blower remains off during each Fullhouse cycle.",
-          "holiday_on": "Minutes the blower remains on during each Holiday cycle.",
-          "holiday_off": "Minutes the blower remains off during each Holiday cycle."
+          "normal_off": "Minutes the blower remains off in each Normal operation cycle.",
+          "eco_on": "Minutes the blower remains on in each Eco / Holiday cycle.",
+          "eco_off": "Minutes the blower remains off in each Eco / Holiday cycle.",
+          "heavy_load_off": "Minutes the blower remains off in each Higher load cycle.",
+          "low_load_on": "Minutes the blower remains on in each Low load cycle.",
+          "low_load_off": "Minutes the blower remains off in each Low load cycle.",
+          "heavy_load_on": "Minutes the blower remains on in each Higher load cycle.",
+          "normal_on": "Minutes the blower remains on in each Normal operation cycle."
         }
+      },
+      "method": {
+        "data": {
+          "aeration_configuration": "Aeration configuration"
+        },
+        "data_description": {
+          "aeration_configuration": "Manual uses your four schedules. Automatic uses tank volume, blower airflow and nominal plant capacity (EO). Operating mode independently represents relative load: Normal 1.0, Low load 1/3, Higher load 1.25; Eco uses a separate 10/470-minute baseline. The 420-minute ON ceiling is a technical/heuristic limit, not a technologically validated boundary."
+        },
+        "title": "Aeration configuration method",
+        "description": "Choose how blower ON/OFF times are obtained. Manufacturer configuration is prepared architecturally but is not available yet."
+      },
+      "mode_selection": {
+        "data": {
+          "mode_selection": "Mode selection",
+          "manual_operating_mode": "Manual operating mode"
+        },
+        "data_description": {
+          "mode_selection": "MANUAL keeps the chosen mode; AUTO evaluates alarm, pump activity and estimated volume.",
+          "manual_operating_mode": "The mode used whenever mode selection is MANUAL."
+        },
+        "title": "Operating mode selection",
+        "description": "Choose whether you select one of the four fixed modes or let AUTO select it from configured Home Assistant signals."
       }
     },
     "error": {
@@ -136,7 +160,8 @@
       "blower_switch_missing": "The blower device has no switch entity. Select a device with a controllable switch.",
       "blower_switch_ambiguous": "The blower device has multiple switches. Select a dedicated smart plug with one switch.",
       "pump_power_missing": "The pump device has no power sensor with device_class power.",
-      "pump_power_ambiguous": "The pump device has multiple power sensors. Select a dedicated smart plug with one power sensor."
+      "pump_power_ambiguous": "The pump device has multiple power sensors. Select a dedicated smart plug with one power sensor.",
+      "airflow_required": "Automatic aeration requires a blower airflow greater than zero."
     }
   },
   "options": {
@@ -161,44 +186,52 @@
           "pump_power_threshold_w": "Pump threshold (W)",
           "use_alarm": "Use alarm",
           "use_pump_activity": "Use pump activity",
-          "use_volume": "Use volume"
+          "use_volume": "Use volume",
+          "auto_stabilization_min": "AUTO stabilization (minutes)",
+          "aeration_configuration": "Aeration configuration",
+          "mode_selection": "Mode selection",
+          "manual_operating_mode": "Manual operating mode"
         },
         "description": "Tune pump detection and the transparent signals used by AUTO mode. These thresholds are site-specific heuristics.",
         "data_description": {
-          "away_timeout_h": "Continuous armed-away duration after which AUTO changes from Visit to Holiday.",
-          "high_starts_hour": "This many validated starts within one hour selects Fullhouse when pump activity is enabled.",
-          "medium_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Residence unless a higher-priority rule applies.",
-          "high_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Fullhouse. It must not be lower than the normal-load threshold.",
-          "inactivity_timeout_h": "After this many hours without a validated pump start, AUTO may select Holiday.",
+          "away_timeout_h": "Continuous armed-away duration after which AUTO changes from Low load to Eco / Holiday.",
+          "high_starts_hour": "This many validated starts within one hour selects Higher load when pump activity is enabled.",
+          "medium_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Normal operation unless a higher-priority rule applies.",
+          "high_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Higher load. It must not be lower than the normal-load threshold.",
+          "inactivity_timeout_h": "After this many hours without a validated pump start, AUTO may select Eco / Holiday.",
           "volume_per_cycle_l": "Estimated discharged liters assigned to every validated pump start. This is an estimate, not a flow measurement.",
           "pump_power_threshold_w": "The pump is considered running when measured power is at or above this value. Choose it above standby noise and below stable running power.",
           "use_alarm": "Allow alarm states and transitions to influence AUTO mode selection.",
           "use_pump_activity": "Allow recent validated pump-start counts to influence AUTO mode selection.",
-          "use_volume": "Allow estimated pumped volume over the last 24 hours to influence AUTO mode selection."
+          "use_volume": "Allow estimated pumped volume over the last 24 hours to influence AUTO mode selection.",
+          "auto_stabilization_min": "Required persistence of a load-driven candidate before AUTO changes mode.",
+          "aeration_configuration": "Manual schedules or transparent V1 automatic calculation. Manufacturer configuration is coming later.",
+          "mode_selection": "MANUAL keeps your selected operating mode; AUTO selects it from enabled signals.",
+          "manual_operating_mode": "Mode used whenever mode selection is MANUAL."
         }
       },
       "schedules": {
         "title": "Blower schedules",
         "description": "Set the blower ON and OFF duration for each operating mode. Verify the values against the plant manufacturer's guidance.",
         "data": {
-          "visit_on": "Visit ON (min)",
-          "visit_off": "Visit OFF (min)",
-          "residence_on": "Residence ON (min)",
-          "residence_off": "Residence OFF (min)",
-          "fullhouse_on": "Fullhouse ON (min)",
-          "fullhouse_off": "Fullhouse OFF (min)",
-          "holiday_on": "Holiday ON (min)",
-          "holiday_off": "Holiday OFF (min)"
+          "normal_off": "Normal operation OFF (min)",
+          "eco_on": "Eco / Holiday ON (min)",
+          "eco_off": "Eco / Holiday OFF (min)",
+          "heavy_load_off": "Higher load OFF (min)",
+          "low_load_on": "Low load ON (min)",
+          "low_load_off": "Low load OFF (min)",
+          "heavy_load_on": "Higher load ON (min)",
+          "normal_on": "Normal operation ON (min)"
         },
         "data_description": {
-          "visit_on": "Minutes the blower remains on during each Visit cycle.",
-          "visit_off": "Minutes the blower remains off during each Visit cycle.",
-          "residence_on": "Minutes the blower remains on during each Residence cycle.",
-          "residence_off": "Minutes the blower remains off during each Residence cycle.",
-          "fullhouse_on": "Minutes the blower remains on during each Fullhouse cycle.",
-          "fullhouse_off": "Minutes the blower remains off during each Fullhouse cycle.",
-          "holiday_on": "Minutes the blower remains on during each Holiday cycle.",
-          "holiday_off": "Minutes the blower remains off during each Holiday cycle."
+          "normal_off": "Minutes the blower remains off in each Normal operation cycle.",
+          "eco_on": "Minutes the blower remains on in each Eco / Holiday cycle.",
+          "eco_off": "Minutes the blower remains off in each Eco / Holiday cycle.",
+          "heavy_load_off": "Minutes the blower remains off in each Higher load cycle.",
+          "low_load_on": "Minutes the blower remains on in each Low load cycle.",
+          "low_load_off": "Minutes the blower remains off in each Low load cycle.",
+          "heavy_load_on": "Minutes the blower remains on in each Higher load cycle.",
+          "normal_on": "Minutes the blower remains on in each Normal operation cycle."
         }
       },
       "devices": {
@@ -227,14 +260,27 @@
   },
   "entity": {
     "select": {
-      "operating_mode": {
-        "name": "Operating mode",
+      "mode_selection": {
+        "name": "Operating mode selection",
         "state": {
-          "visit": "Visit",
-          "residence": "Residence",
-          "fullhouse": "Fullhouse",
-          "holiday": "Holiday",
-          "auto": "AUTO"
+          "auto": "AUTO",
+          "manual": "MANUAL"
+        }
+      },
+      "manual_operating_mode": {
+        "name": "Manual operating mode",
+        "state": {
+          "eco": "Eco / Holiday",
+          "normal": "Normal operation",
+          "heavy_load": "Higher load",
+          "low_load": "Low load"
+        }
+      },
+      "aeration_configuration": {
+        "name": "Aeration configuration",
+        "state": {
+          "automatic": "Automatic",
+          "manual": "Manual"
         }
       }
     },
@@ -258,10 +304,10 @@
       "active_mode": {
         "name": "Active mode",
         "state": {
-          "visit": "Visit",
-          "residence": "Residence",
-          "fullhouse": "Fullhouse",
-          "holiday": "Holiday"
+          "eco": "Eco / Holiday",
+          "normal": "Normal operation",
+          "heavy_load": "Higher load",
+          "low_load": "Low load"
         }
       },
       "auto_reason": {
@@ -308,6 +354,12 @@
       },
       "last_mode_change": {
         "name": "Last mode change"
+      },
+      "manufacturer_configuration": {
+        "name": "Manufacturer configuration (coming soon)",
+        "state": {
+          "coming_soon": "Coming soon"
+        }
       }
     }
   },
@@ -316,6 +368,26 @@
       "options": {
         "aerated": "Aerated treatment plant",
         "other": "Other treatment plant"
+      }
+    },
+    "aeration_configuration": {
+      "options": {
+        "automatic": "Automatic",
+        "manual": "Manual"
+      }
+    },
+    "mode_selection": {
+      "options": {
+        "auto": "AUTO",
+        "manual": "MANUAL"
+      }
+    },
+    "operating_mode": {
+      "options": {
+        "eco": "Eco / Holiday",
+        "normal": "Normal operation",
+        "heavy_load": "Higher load",
+        "low_load": "Low load"
       }
     }
   }

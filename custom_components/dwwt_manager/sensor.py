@@ -21,8 +21,9 @@ class DwwtSensorDescription(SensorEntityDescription):
 
 
 SENSORS = (
-    DwwtSensorDescription(key="active_mode", translation_key="active_mode", device_class=SensorDeviceClass.ENUM, options=["visit", "residence", "fullhouse", "holiday"] , value_fn=lambda m: m.state.active_mode.value),
+    DwwtSensorDescription(key="active_mode", translation_key="active_mode", device_class=SensorDeviceClass.ENUM, options=["normal", "low_load", "heavy_load", "eco"] , value_fn=lambda m: m.state.active_mode.value),
     DwwtSensorDescription(key="auto_reason", translation_key="auto_reason", value_fn=lambda m: m.state.auto_reason),
+    DwwtSensorDescription(key="manufacturer_configuration", translation_key="manufacturer_configuration", icon="mdi:factory", device_class=SensorDeviceClass.ENUM, options=["coming_soon"], value_fn=lambda m: "coming_soon"),
     DwwtSensorDescription(key="pump_starts_total", translation_key="pump_starts_total", icon="mdi:pump", state_class=SensorStateClass.TOTAL, value_fn=lambda m: m.state.pump_starts_total),
     DwwtSensorDescription(key="pumped_volume_total", translation_key="pumped_volume_total", native_unit_of_measurement=UnitOfVolume.LITERS, device_class=SensorDeviceClass.VOLUME, state_class=SensorStateClass.TOTAL, suggested_display_precision=1, value_fn=lambda m: m.lifetime_volume),
     *tuple(DwwtSensorDescription(key=f"volume_{period}", translation_key=f"volume_{period}", native_unit_of_measurement=UnitOfVolume.LITERS, device_class=SensorDeviceClass.VOLUME, state_class=SensorStateClass.TOTAL, suggested_display_precision=1, value_fn=lambda m, p=period: m.volume_period(p)) for period in ("day", "week", "month", "year")),
