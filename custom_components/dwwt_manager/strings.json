@@ -13,6 +13,14 @@
           "plant_type": "Plant type",
           "nominal_eo": "Nominal design capacity (EO)",
           "tank_volume_l": "Tank volume (L)"
+        },
+        "data_description": {
+          "name": "Display name used for the Home Assistant device and its entities.",
+          "manufacturer": "Optional treatment-plant manufacturer; informational only.",
+          "model": "Optional manufacturer model designation; informational only.",
+          "plant_type": "Select the general process type. It does not automatically choose a blower schedule.",
+          "nominal_eo": "Manufacturer-rated design capacity in equivalent inhabitants (EO); this is not the occupant count.",
+          "tank_volume_l": "Total treatment-tank volume in liters; stored as plant information."
         }
       },
       "household": {
@@ -22,6 +30,11 @@
           "occupants": "Occupants",
           "estimated_eo": "Estimated current load (EO)",
           "load_factor": "Manual load factor"
+        },
+        "data_description": {
+          "occupants": "Actual number of regular occupants. Zero means unknown; it is kept separate from EO.",
+          "estimated_eo": "Optional estimate of the current organic/hydraulic load expressed as EO. Zero means unknown.",
+          "load_factor": "Optional manual multiplier describing relative load. Version 0.1 stores it for future load models and does not apply it to AUTO yet."
         }
       },
       "blower": {
@@ -32,7 +45,13 @@
           "blower_airflow_l_min": "Airflow (L/min, optional)",
           "blower_pressure_mbar": "Pressure (mbar, optional)"
         },
-        "description": "Select the Home Assistant entity that controls only the aeration blower. Nameplate values are optional and informational."
+        "description": "Select the Home Assistant entity that controls only the aeration blower. Nameplate values are optional and informational.",
+        "data_description": {
+          "blower_entity": "Existing switch or fan entity that DWWT Manager may turn on and off. This is the only controlled equipment.",
+          "blower_power_w": "Optional rated electrical input from the blower nameplate, in watts; informational only.",
+          "blower_airflow_l_min": "Optional rated airflow from the blower nameplate, in liters per minute; informational only.",
+          "blower_pressure_mbar": "Optional rated operating pressure, in millibars; informational only."
+        }
       },
       "pump": {
         "title": "Wastewater/sludge pump monitoring",
@@ -43,6 +62,13 @@
           "pump_power_threshold_w": "Running threshold (W)",
           "volume_per_cycle_l": "Estimated volume per cycle (L)",
           "pump_min_runtime_s": "Minimum runtime (s)"
+        },
+        "data_description": {
+          "pump_entity": "Optional switch or binary sensor representing actual pump operation. Used when no power sensor is selected.",
+          "pump_power_sensor": "Optional power sensor in watts. When selected, it takes precedence over the pump state entity.",
+          "pump_power_threshold_w": "The pump is considered running when measured power is at or above this value. Choose it above standby noise and below stable running power.",
+          "volume_per_cycle_l": "Estimated discharged liters assigned to every validated pump start. This is an estimate, not a flow measurement.",
+          "pump_min_runtime_s": "Activity shorter than this duration is ignored as noise or a startup transient."
         }
       },
       "optional": {
@@ -53,7 +79,13 @@
           "alarm_entity": "Alarm control panel",
           "away_timeout_h": "Holiday timeout (hours)"
         },
-        "description": "Assign optional inlet-pump and alarm entities, or leave them empty when they are not available."
+        "description": "Assign optional inlet-pump and alarm entities, or leave them empty when they are not available.",
+        "data_description": {
+          "inlet_entity": "Optional switch or binary sensor for monitoring inlet-pump activity. DWWT Manager does not control it.",
+          "inlet_power_sensor": "Optional inlet-pump power sensor. It takes precedence over the inlet state entity and currently uses the pump power threshold.",
+          "alarm_entity": "Optional alarm control panel used by AUTO to distinguish night, short absence and prolonged absence.",
+          "away_timeout_h": "Continuous armed-away duration after which AUTO changes from Visit to Holiday."
+        }
       },
       "auto": {
         "title": "AUTO strategy",
@@ -66,6 +98,15 @@
           "medium_volume_day_l": "Normal-load volume/24 h (L)",
           "high_volume_day_l": "High-load volume/24 h (L)",
           "inactivity_timeout_h": "Inactivity timeout (hours)"
+        },
+        "data_description": {
+          "use_alarm": "Allow alarm states and transitions to influence AUTO mode selection.",
+          "use_pump_activity": "Allow recent validated pump-start counts to influence AUTO mode selection.",
+          "use_volume": "Allow estimated pumped volume over the last 24 hours to influence AUTO mode selection.",
+          "high_starts_hour": "This many validated starts within one hour selects Fullhouse when pump activity is enabled.",
+          "medium_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Residence unless a higher-priority rule applies.",
+          "high_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Fullhouse. It must not be lower than the normal-load threshold.",
+          "inactivity_timeout_h": "After this many hours without a validated pump start, AUTO may select Holiday."
         }
       },
       "schedules": {
@@ -80,6 +121,16 @@
           "fullhouse_off": "Fullhouse OFF (min)",
           "holiday_on": "Holiday ON (min)",
           "holiday_off": "Holiday OFF (min)"
+        },
+        "data_description": {
+          "visit_on": "Minutes the blower remains on during each Visit cycle.",
+          "visit_off": "Minutes the blower remains off during each Visit cycle.",
+          "residence_on": "Minutes the blower remains on during each Residence cycle.",
+          "residence_off": "Minutes the blower remains off during each Residence cycle.",
+          "fullhouse_on": "Minutes the blower remains on during each Fullhouse cycle.",
+          "fullhouse_off": "Minutes the blower remains off during each Fullhouse cycle.",
+          "holiday_on": "Minutes the blower remains on during each Holiday cycle.",
+          "holiday_off": "Minutes the blower remains off during each Holiday cycle."
         }
       }
     },
@@ -111,7 +162,19 @@
           "use_pump_activity": "Use pump activity",
           "use_volume": "Use volume"
         },
-        "description": "Tune pump detection and the transparent signals used by AUTO mode. These thresholds are site-specific heuristics."
+        "description": "Tune pump detection and the transparent signals used by AUTO mode. These thresholds are site-specific heuristics.",
+        "data_description": {
+          "away_timeout_h": "Continuous armed-away duration after which AUTO changes from Visit to Holiday.",
+          "high_starts_hour": "This many validated starts within one hour selects Fullhouse when pump activity is enabled.",
+          "medium_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Residence unless a higher-priority rule applies.",
+          "high_volume_day_l": "At or above this estimated 24-hour volume, AUTO selects Fullhouse. It must not be lower than the normal-load threshold.",
+          "inactivity_timeout_h": "After this many hours without a validated pump start, AUTO may select Holiday.",
+          "volume_per_cycle_l": "Estimated discharged liters assigned to every validated pump start. This is an estimate, not a flow measurement.",
+          "pump_power_threshold_w": "The pump is considered running when measured power is at or above this value. Choose it above standby noise and below stable running power.",
+          "use_alarm": "Allow alarm states and transitions to influence AUTO mode selection.",
+          "use_pump_activity": "Allow recent validated pump-start counts to influence AUTO mode selection.",
+          "use_volume": "Allow estimated pumped volume over the last 24 hours to influence AUTO mode selection."
+        }
       },
       "schedules": {
         "title": "Blower schedules",
@@ -125,6 +188,16 @@
           "fullhouse_off": "Fullhouse OFF (min)",
           "holiday_on": "Holiday ON (min)",
           "holiday_off": "Holiday OFF (min)"
+        },
+        "data_description": {
+          "visit_on": "Minutes the blower remains on during each Visit cycle.",
+          "visit_off": "Minutes the blower remains off during each Visit cycle.",
+          "residence_on": "Minutes the blower remains on during each Residence cycle.",
+          "residence_off": "Minutes the blower remains off during each Residence cycle.",
+          "fullhouse_on": "Minutes the blower remains on during each Fullhouse cycle.",
+          "fullhouse_off": "Minutes the blower remains off during each Fullhouse cycle.",
+          "holiday_on": "Minutes the blower remains on during each Holiday cycle.",
+          "holiday_off": "Minutes the blower remains off during each Holiday cycle."
         }
       }
     }

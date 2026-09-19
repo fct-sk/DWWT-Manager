@@ -12,6 +12,14 @@
           "plant_type": "Typ čistiarne",
           "nominal_eo": "Nominálna kapacita (EO)",
           "tank_volume_l": "Objem nádrže (L)"
+        },
+        "data_description": {
+          "name": "Názov zariadenia a jeho entít zobrazovaný v Home Assistant.",
+          "manufacturer": "Voliteľný výrobca čistiarne; hodnota je iba informatívna.",
+          "model": "Voliteľné modelové označenie výrobcu; hodnota je iba informatívna.",
+          "plant_type": "Všeobecný typ procesu. Táto voľba automaticky neurčuje program dúchadla.",
+          "nominal_eo": "Projektovaná kapacita podľa výrobcu v ekvivalentných obyvateľoch (EO); nejde o počet obyvateľov.",
+          "tank_volume_l": "Celkový objem nádrže čistiarne v litroch; slúži ako údaj o zariadení."
         }
       },
       "household": {
@@ -21,6 +29,11 @@
           "occupants": "Počet obyvateľov",
           "estimated_eo": "Odhad aktuálneho zaťaženia (EO)",
           "load_factor": "Ručný faktor zaťaženia"
+        },
+        "data_description": {
+          "occupants": "Skutočný počet pravidelných obyvateľov. Nula znamená neznámu hodnotu; údaj je oddelený od EO.",
+          "estimated_eo": "Voliteľný odhad aktuálneho organického alebo hydraulického zaťaženia vyjadrený v EO. Nula znamená neznámu hodnotu.",
+          "load_factor": "Voliteľný násobiteľ relatívneho zaťaženia. Verzia 0.1 ho uchováva pre budúce modely a zatiaľ ho v AUTO nepoužíva."
         }
       },
       "blower": {
@@ -31,7 +44,13 @@
           "blower_airflow_l_min": "Prietok vzduchu (L/min)",
           "blower_pressure_mbar": "Tlak (mbar)"
         },
-        "description": "Vyberte entitu Home Assistant, ktorá ovláda iba prevzdušňovacie dúchadlo. Štítkové údaje sú voliteľné a informatívne."
+        "description": "Vyberte entitu Home Assistant, ktorá ovláda iba prevzdušňovacie dúchadlo. Štítkové údaje sú voliteľné a informatívne.",
+        "data_description": {
+          "blower_entity": "Existujúci spínač alebo ventilátor, ktorý môže DWWT Manager zapínať a vypínať. Ide o jediné ovládané zariadenie.",
+          "blower_power_w": "Voliteľný menovitý príkon zo štítku dúchadla vo wattoch; iba informatívny údaj.",
+          "blower_airflow_l_min": "Voliteľný menovitý prietok vzduchu zo štítku v litroch za minútu; iba informatívny údaj.",
+          "blower_pressure_mbar": "Voliteľný menovitý prevádzkový tlak v milibaroch; iba informatívny údaj."
+        }
       },
       "pump": {
         "title": "Monitorovanie čerpadla",
@@ -42,6 +61,13 @@
           "pump_power_threshold_w": "Prah prevádzky (W)",
           "volume_per_cycle_l": "Odhad objemu na cyklus (L)",
           "pump_min_runtime_s": "Minimálny čas chodu (s)"
+        },
+        "data_description": {
+          "pump_entity": "Voliteľný spínač alebo binárny senzor skutočného chodu čerpadla. Použije sa, ak nie je vybraný snímač príkonu.",
+          "pump_power_sensor": "Voliteľný snímač príkonu vo wattoch. Ak je vybraný, má prednosť pred stavovou entitou čerpadla.",
+          "pump_power_threshold_w": "Čerpadlo sa považuje za spustené pri príkone rovnajúcom sa alebo vyššom než táto hodnota. Prah nastavte nad pohotovostný šum a pod stabilný prevádzkový príkon.",
+          "volume_per_cycle_l": "Odhad litrov odčerpaných pri každom potvrdenom štarte. Ide o odhad, nie priame meranie prietoku.",
+          "pump_min_runtime_s": "Aktivita kratšia než tento čas sa ignoruje ako šum alebo krátka štartovacia špička."
         }
       },
       "optional": {
@@ -52,7 +78,13 @@
           "alarm_entity": "Zabezpečovací systém",
           "away_timeout_h": "Čas do dovolenky (h)"
         },
-        "description": "Priraďte voliteľné entity vstupného čerpadla a alarmu alebo ich nechajte prázdne, ak nie sú dostupné."
+        "description": "Priraďte voliteľné entity vstupného čerpadla a alarmu alebo ich nechajte prázdne, ak nie sú dostupné.",
+        "data_description": {
+          "inlet_entity": "Voliteľný spínač alebo binárny senzor na monitorovanie vstupného čerpadla. DWWT Manager ho neovláda.",
+          "inlet_power_sensor": "Voliteľný snímač príkonu vstupného čerpadla. Má prednosť pred stavovou entitou a zatiaľ používa rovnaký výkonový prah ako odpadové čerpadlo.",
+          "alarm_entity": "Voliteľný alarm používaný režimom AUTO na rozlíšenie noci, krátkej neprítomnosti a dlhšej neprítomnosti.",
+          "away_timeout_h": "Nepretržitý čas stavu Zapnuté mimo domu, po ktorom AUTO prepne z režimu Návšteva na Dovolenka."
+        }
       },
       "auto": {
         "title": "Stratégia AUTO",
@@ -65,6 +97,15 @@
           "medium_volume_day_l": "Bežný objem za 24 h (L)",
           "high_volume_day_l": "Vysoký objem za 24 h (L)",
           "inactivity_timeout_h": "Čas nečinnosti (h)"
+        },
+        "data_description": {
+          "use_alarm": "Povolí, aby stavy a prechody alarmu ovplyvňovali výber režimu AUTO.",
+          "use_pump_activity": "Povolí, aby počet nedávnych potvrdených štartov čerpadla ovplyvňoval režim AUTO.",
+          "use_volume": "Povolí, aby odhad odčerpaného objemu za posledných 24 hodín ovplyvňoval režim AUTO.",
+          "high_starts_hour": "Tento počet potvrdených štartov za jednu hodinu zvolí režim Plný dom, ak sa používa aktivita čerpadla.",
+          "medium_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Pobyt, ak nemá prednosť iné pravidlo.",
+          "high_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Plný dom. Hodnota nesmie byť nižšia než prah bežného zaťaženia.",
+          "inactivity_timeout_h": "Po tomto počte hodín bez potvrdeného štartu čerpadla môže AUTO zvoliť Dovolenku."
         }
       },
       "schedules": {
@@ -79,6 +120,16 @@
           "fullhouse_off": "Plný dom VYP (min)",
           "holiday_on": "Dovolenka ZAP (min)",
           "holiday_off": "Dovolenka VYP (min)"
+        },
+        "data_description": {
+          "visit_on": "Počet minút zapnutia dúchadla v každom cykle režimu Návšteva.",
+          "visit_off": "Počet minút vypnutia dúchadla v každom cykle režimu Návšteva.",
+          "residence_on": "Počet minút zapnutia dúchadla v každom cykle režimu Pobyt.",
+          "residence_off": "Počet minút vypnutia dúchadla v každom cykle režimu Pobyt.",
+          "fullhouse_on": "Počet minút zapnutia dúchadla v každom cykle režimu Plný dom.",
+          "fullhouse_off": "Počet minút vypnutia dúchadla v každom cykle režimu Plný dom.",
+          "holiday_on": "Počet minút zapnutia dúchadla v každom cykle režimu Dovolenka.",
+          "holiday_off": "Počet minút vypnutia dúchadla v každom cykle režimu Dovolenka."
         }
       }
     },
@@ -111,6 +162,18 @@
           "use_alarm": "Používať stav alarmu",
           "use_pump_activity": "Používať aktivitu čerpadla",
           "use_volume": "Používať odhad objemu"
+        },
+        "data_description": {
+          "away_timeout_h": "Nepretržitý čas stavu Zapnuté mimo domu, po ktorom AUTO prepne z režimu Návšteva na Dovolenka.",
+          "high_starts_hour": "Tento počet potvrdených štartov za jednu hodinu zvolí režim Plný dom, ak sa používa aktivita čerpadla.",
+          "medium_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Pobyt, ak nemá prednosť iné pravidlo.",
+          "high_volume_day_l": "Pri tomto alebo vyššom odhadovanom objeme za 24 hodín AUTO zvolí Plný dom. Hodnota nesmie byť nižšia než prah bežného zaťaženia.",
+          "inactivity_timeout_h": "Po tomto počte hodín bez potvrdeného štartu čerpadla môže AUTO zvoliť Dovolenku.",
+          "volume_per_cycle_l": "Odhad litrov odčerpaných pri každom potvrdenom štarte. Ide o odhad, nie priame meranie prietoku.",
+          "pump_power_threshold_w": "Čerpadlo sa považuje za spustené pri príkone rovnajúcom sa alebo vyššom než táto hodnota. Prah nastavte nad pohotovostný šum a pod stabilný prevádzkový príkon.",
+          "use_alarm": "Povolí, aby stavy a prechody alarmu ovplyvňovali výber režimu AUTO.",
+          "use_pump_activity": "Povolí, aby počet nedávnych potvrdených štartov čerpadla ovplyvňoval režim AUTO.",
+          "use_volume": "Povolí, aby odhad odčerpaného objemu za posledných 24 hodín ovplyvňoval režim AUTO."
         }
       },
       "schedules": {
@@ -125,6 +188,16 @@
           "fullhouse_off": "Plný dom VYP (min)",
           "holiday_on": "Dovolenka ZAP (min)",
           "holiday_off": "Dovolenka VYP (min)"
+        },
+        "data_description": {
+          "visit_on": "Počet minút zapnutia dúchadla v každom cykle režimu Návšteva.",
+          "visit_off": "Počet minút vypnutia dúchadla v každom cykle režimu Návšteva.",
+          "residence_on": "Počet minút zapnutia dúchadla v každom cykle režimu Pobyt.",
+          "residence_off": "Počet minút vypnutia dúchadla v každom cykle režimu Pobyt.",
+          "fullhouse_on": "Počet minút zapnutia dúchadla v každom cykle režimu Plný dom.",
+          "fullhouse_off": "Počet minút vypnutia dúchadla v každom cykle režimu Plný dom.",
+          "holiday_on": "Počet minút zapnutia dúchadla v každom cykle režimu Dovolenka.",
+          "holiday_off": "Počet minút vypnutia dúchadla v každom cykle režimu Dovolenka."
         }
       }
     }
