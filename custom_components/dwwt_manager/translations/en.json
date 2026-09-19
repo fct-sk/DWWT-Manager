@@ -1,0 +1,8 @@
+{
+  "title": "DWWT Manager",
+  "entity": {
+    "select": {"operating_mode": {"name": "Operating mode", "state": {"visit": "Visit", "residence": "Residence", "fullhouse": "Fullhouse", "holiday": "Holiday", "auto": "AUTO"}}},
+    "switch": {"control": {"name": "Automatic blower control"}},
+    "binary_sensor": {"pump_running": {"name": "Pump running"}, "blower_phase": {"name": "Blower schedule phase"}, "inlet_running": {"name": "Inlet pump running"}}
+  }
+}
