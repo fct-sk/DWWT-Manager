@@ -39,7 +39,7 @@ GENERAL_SCHEMA = vol.Schema({
     vol.Required(CONF_NAME, default="DWWT"): TextSelector(),
     vol.Optional(CONF_MANUFACTURER, default=""): TextSelector(),
     vol.Optional(CONF_MODEL, default=""): TextSelector(),
-    vol.Required(CONF_PLANT_TYPE, default="aerated"): SelectSelector(SelectSelectorConfig(options=["aerated", "other"], mode=SelectSelectorMode.DROPDOWN)),
+    vol.Required(CONF_PLANT_TYPE, default="aerated"): SelectSelector(SelectSelectorConfig(options=["aerated", "other"], mode=SelectSelectorMode.DROPDOWN, translation_key="plant_type")),
     vol.Required(CONF_NOMINAL_EO, default=6): _num(0.1, 100, 0.1),
     vol.Required(CONF_TANK_VOLUME, default=3000): _num(1, 100000, 1),
 })

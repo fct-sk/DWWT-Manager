@@ -3,27 +3,224 @@
   "config": {
     "flow_title": "{name}",
     "step": {
-      "user": {"title": "Treatment plant", "description": "Basic plant and design-capacity information. EO is a design/load approximation, not occupant count.", "data": {"name": "Name", "manufacturer": "Manufacturer (optional)", "model": "Model (optional)", "plant_type": "Plant type", "nominal_eo": "Nominal design capacity (EO)", "tank_volume_l": "Tank volume (L)"}},
-      "household": {"title": "Household and load", "description": "Occupants and estimated EO are deliberately separate. Leave an unknown value at zero.", "data": {"occupants": "Occupants", "estimated_eo": "Estimated current load (EO)", "load_factor": "Manual load factor"}},
-      "blower": {"title": "Blower", "data": {"blower_entity": "Blower switch or fan", "blower_power_w": "Rated power (W, optional)", "blower_airflow_l_min": "Airflow (L/min, optional)", "blower_pressure_mbar": "Pressure (mbar, optional)"}},
-      "pump": {"title": "Wastewater/sludge pump monitoring", "description": "The integration never controls this pump. Select a power sensor for float-controlled pumps, or a state entity.", "data": {"pump_entity": "Pump state entity (optional)", "pump_power_sensor": "Pump power sensor (optional)", "pump_power_threshold_w": "Running threshold (W)", "volume_per_cycle_l": "Estimated volume per cycle (L)", "pump_min_runtime_s": "Minimum runtime (s)"}},
-      "optional": {"title": "Optional inputs", "data": {"inlet_entity": "Inlet pump state entity", "inlet_power_sensor": "Inlet pump power sensor", "alarm_entity": "Alarm control panel", "away_timeout_h": "Holiday timeout (hours)"}},
-      "auto": {"title": "AUTO strategy", "description": "These are transparent application heuristics, not universal treatment-engineering requirements.", "data": {"use_alarm": "Use alarm state", "use_pump_activity": "Use pump starts", "use_volume": "Use estimated volume", "high_starts_hour": "High-load starts/hour", "medium_volume_day_l": "Normal-load volume/24 h (L)", "high_volume_day_l": "High-load volume/24 h (L)", "inactivity_timeout_h": "Inactivity timeout (hours)"}},
-      "schedules": {"title": "Blower schedules", "description": "Defaults are inspired by one ECOkocka configuration and must be checked for your plant.", "data": {"visit_on": "Visit ON (min)", "visit_off": "Visit OFF (min)", "residence_on": "Residence ON (min)", "residence_off": "Residence OFF (min)", "fullhouse_on": "Fullhouse ON (min)", "fullhouse_off": "Fullhouse OFF (min)", "holiday_on": "Holiday ON (min)", "holiday_off": "Holiday OFF (min)"}}
+      "user": {
+        "title": "Treatment plant",
+        "description": "Basic plant and design-capacity information. EO is a design/load approximation, not occupant count.",
+        "data": {
+          "name": "Name",
+          "manufacturer": "Manufacturer (optional)",
+          "model": "Model (optional)",
+          "plant_type": "Plant type",
+          "nominal_eo": "Nominal design capacity (EO)",
+          "tank_volume_l": "Tank volume (L)"
+        }
+      },
+      "household": {
+        "title": "Household and load",
+        "description": "Occupants and estimated EO are deliberately separate. Leave an unknown value at zero.",
+        "data": {
+          "occupants": "Occupants",
+          "estimated_eo": "Estimated current load (EO)",
+          "load_factor": "Manual load factor"
+        }
+      },
+      "blower": {
+        "title": "Blower",
+        "data": {
+          "blower_entity": "Blower switch or fan",
+          "blower_power_w": "Rated power (W, optional)",
+          "blower_airflow_l_min": "Airflow (L/min, optional)",
+          "blower_pressure_mbar": "Pressure (mbar, optional)"
+        },
+        "description": "Select the Home Assistant entity that controls only the aeration blower. Nameplate values are optional and informational."
+      },
+      "pump": {
+        "title": "Wastewater/sludge pump monitoring",
+        "description": "The integration never controls this pump. Select a power sensor for float-controlled pumps, or a state entity.",
+        "data": {
+          "pump_entity": "Pump state entity (optional)",
+          "pump_power_sensor": "Pump power sensor (optional)",
+          "pump_power_threshold_w": "Running threshold (W)",
+          "volume_per_cycle_l": "Estimated volume per cycle (L)",
+          "pump_min_runtime_s": "Minimum runtime (s)"
+        }
+      },
+      "optional": {
+        "title": "Optional inputs",
+        "data": {
+          "inlet_entity": "Inlet pump state entity",
+          "inlet_power_sensor": "Inlet pump power sensor",
+          "alarm_entity": "Alarm control panel",
+          "away_timeout_h": "Holiday timeout (hours)"
+        },
+        "description": "Assign optional inlet-pump and alarm entities, or leave them empty when they are not available."
+      },
+      "auto": {
+        "title": "AUTO strategy",
+        "description": "These are transparent application heuristics, not universal treatment-engineering requirements.",
+        "data": {
+          "use_alarm": "Use alarm state",
+          "use_pump_activity": "Use pump starts",
+          "use_volume": "Use estimated volume",
+          "high_starts_hour": "High-load starts/hour",
+          "medium_volume_day_l": "Normal-load volume/24 h (L)",
+          "high_volume_day_l": "High-load volume/24 h (L)",
+          "inactivity_timeout_h": "Inactivity timeout (hours)"
+        }
+      },
+      "schedules": {
+        "title": "Blower schedules",
+        "description": "Defaults are inspired by one ECOkocka configuration and must be checked for your plant.",
+        "data": {
+          "visit_on": "Visit ON (min)",
+          "visit_off": "Visit OFF (min)",
+          "residence_on": "Residence ON (min)",
+          "residence_off": "Residence OFF (min)",
+          "fullhouse_on": "Fullhouse ON (min)",
+          "fullhouse_off": "Fullhouse OFF (min)",
+          "holiday_on": "Holiday ON (min)",
+          "holiday_off": "Holiday OFF (min)"
+        }
+      }
     },
-    "error": {"pump_source_required": "Select either a pump state entity or power sensor.", "threshold_order": "The high volume threshold must be at least the normal threshold."}
+    "error": {
+      "pump_source_required": "Select either a pump state entity or power sensor.",
+      "threshold_order": "The high volume threshold must be at least the normal threshold."
+    }
   },
-  "options": {"step": {"init": {"title": "DWWT Manager options", "menu_options": {"settings": "AUTO and pump settings", "schedules": "Blower schedules"}}, "settings": {"title": "AUTO and pump settings", "data": {"away_timeout_h": "Holiday timeout (hours)", "high_starts_hour": "High-load starts/hour", "medium_volume_day_l": "Normal-load volume/24 h (L)", "high_volume_day_l": "High-load volume/24 h (L)", "inactivity_timeout_h": "Inactivity timeout (hours)", "volume_per_cycle_l": "Estimated volume per cycle (L)", "pump_power_threshold_w": "Pump threshold (W)", "use_alarm": "Use alarm", "use_pump_activity": "Use pump activity", "use_volume": "Use volume"}}, "schedules": {"title": "Blower schedules"}}},
+  "options": {
+    "step": {
+      "init": {
+        "title": "DWWT Manager options",
+        "menu_options": {
+          "settings": "AUTO and pump settings",
+          "schedules": "Blower schedules"
+        }
+      },
+      "settings": {
+        "title": "AUTO and pump settings",
+        "data": {
+          "away_timeout_h": "Holiday timeout (hours)",
+          "high_starts_hour": "High-load starts/hour",
+          "medium_volume_day_l": "Normal-load volume/24 h (L)",
+          "high_volume_day_l": "High-load volume/24 h (L)",
+          "inactivity_timeout_h": "Inactivity timeout (hours)",
+          "volume_per_cycle_l": "Estimated volume per cycle (L)",
+          "pump_power_threshold_w": "Pump threshold (W)",
+          "use_alarm": "Use alarm",
+          "use_pump_activity": "Use pump activity",
+          "use_volume": "Use volume"
+        },
+        "description": "Tune pump detection and the transparent signals used by AUTO mode. These thresholds are site-specific heuristics."
+      },
+      "schedules": {
+        "title": "Blower schedules",
+        "description": "Set the blower ON and OFF duration for each operating mode. Verify the values against the plant manufacturer's guidance.",
+        "data": {
+          "visit_on": "Visit ON (min)",
+          "visit_off": "Visit OFF (min)",
+          "residence_on": "Residence ON (min)",
+          "residence_off": "Residence OFF (min)",
+          "fullhouse_on": "Fullhouse ON (min)",
+          "fullhouse_off": "Fullhouse OFF (min)",
+          "holiday_on": "Holiday ON (min)",
+          "holiday_off": "Holiday OFF (min)"
+        }
+      }
+    }
+  },
   "entity": {
-    "select": {"operating_mode": {"name": "Operating mode", "state": {"visit": "Visit", "residence": "Residence", "fullhouse": "Fullhouse", "holiday": "Holiday", "auto": "AUTO"}}},
-    "switch": {"control": {"name": "Automatic blower control"}},
-    "binary_sensor": {"pump_running": {"name": "Pump running"}, "blower_phase": {"name": "Blower schedule phase"}, "inlet_running": {"name": "Inlet pump running"}},
+    "select": {
+      "operating_mode": {
+        "name": "Operating mode",
+        "state": {
+          "visit": "Visit",
+          "residence": "Residence",
+          "fullhouse": "Fullhouse",
+          "holiday": "Holiday",
+          "auto": "AUTO"
+        }
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "Automatic blower control"
+      }
+    },
+    "binary_sensor": {
+      "pump_running": {
+        "name": "Pump running"
+      },
+      "blower_phase": {
+        "name": "Blower schedule phase"
+      },
+      "inlet_running": {
+        "name": "Inlet pump running"
+      }
+    },
     "sensor": {
-      "active_mode": {"name": "Active mode", "state": {"visit": "Visit", "residence": "Residence", "fullhouse": "Fullhouse", "holiday": "Holiday"}},
-      "auto_reason": {"name": "AUTO reason"}, "pump_starts_total": {"name": "Pump starts total"}, "pumped_volume_total": {"name": "Pumped volume total"},
-      "volume_day": {"name": "Pumped volume today"}, "volume_week": {"name": "Pumped volume this week"}, "volume_month": {"name": "Pumped volume this month"}, "volume_year": {"name": "Pumped volume this year"},
-      "starts_1h": {"name": "Pump starts last hour"}, "starts_6h": {"name": "Pump starts last 6 hours"}, "starts_24h": {"name": "Pump starts last 24 hours"}, "volume_24h": {"name": "Pumped volume last 24 hours"}, "phase_remaining": {"name": "Schedule phase remaining"},
-      "last_pump_start": {"name": "Last pump start"}, "last_pump_stop": {"name": "Last pump stop"}, "last_mode_change": {"name": "Last mode change"}
+      "active_mode": {
+        "name": "Active mode",
+        "state": {
+          "visit": "Visit",
+          "residence": "Residence",
+          "fullhouse": "Fullhouse",
+          "holiday": "Holiday"
+        }
+      },
+      "auto_reason": {
+        "name": "AUTO reason"
+      },
+      "pump_starts_total": {
+        "name": "Pump starts total"
+      },
+      "pumped_volume_total": {
+        "name": "Pumped volume total"
+      },
+      "volume_day": {
+        "name": "Pumped volume today"
+      },
+      "volume_week": {
+        "name": "Pumped volume this week"
+      },
+      "volume_month": {
+        "name": "Pumped volume this month"
+      },
+      "volume_year": {
+        "name": "Pumped volume this year"
+      },
+      "starts_1h": {
+        "name": "Pump starts last hour"
+      },
+      "starts_6h": {
+        "name": "Pump starts last 6 hours"
+      },
+      "starts_24h": {
+        "name": "Pump starts last 24 hours"
+      },
+      "volume_24h": {
+        "name": "Pumped volume last 24 hours"
+      },
+      "phase_remaining": {
+        "name": "Schedule phase remaining"
+      },
+      "last_pump_start": {
+        "name": "Last pump start"
+      },
+      "last_pump_stop": {
+        "name": "Last pump stop"
+      },
+      "last_mode_change": {
+        "name": "Last mode change"
+      }
+    }
+  },
+  "selector": {
+    "plant_type": {
+      "options": {
+        "aerated": "Aerated treatment plant",
+        "other": "Other treatment plant"
+      }
     }
   }
 }

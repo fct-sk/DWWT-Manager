@@ -2,27 +2,225 @@
   "title": "DWWT Manager",
   "config": {
     "step": {
-      "user": {"title": "Čistiareň", "description": "Základné údaje a projektovaná kapacita. EO je zjednodušený parameter zaťaženia, nie počet obyvateľov.", "data": {"name": "Názov", "manufacturer": "Výrobca (voliteľné)", "model": "Model (voliteľné)", "plant_type": "Typ čistiarne", "nominal_eo": "Nominálna kapacita (EO)", "tank_volume_l": "Objem nádrže (L)"}},
-      "household": {"title": "Domácnosť a zaťaženie", "description": "Počet obyvateľov a odhad EO sú samostatné hodnoty. Nula znamená neznámu hodnotu.", "data": {"occupants": "Počet obyvateľov", "estimated_eo": "Odhad aktuálneho zaťaženia (EO)", "load_factor": "Ručný faktor zaťaženia"}},
-      "blower": {"title": "Dúchadlo", "data": {"blower_entity": "Spínač alebo ventilátor dúchadla", "blower_power_w": "Menovitý príkon (W)", "blower_airflow_l_min": "Prietok vzduchu (L/min)", "blower_pressure_mbar": "Tlak (mbar)"}},
-      "pump": {"title": "Monitorovanie čerpadla", "description": "Integrácia toto čerpadlo nikdy neovláda. Pre plavákové čerpadlo vyberte snímač príkonu.", "data": {"pump_entity": "Entita stavu čerpadla", "pump_power_sensor": "Snímač príkonu čerpadla", "pump_power_threshold_w": "Prah prevádzky (W)", "volume_per_cycle_l": "Odhad objemu na cyklus (L)", "pump_min_runtime_s": "Minimálny čas chodu (s)"}},
-      "optional": {"title": "Voliteľné vstupy", "data": {"inlet_entity": "Stav vstupného čerpadla", "inlet_power_sensor": "Príkon vstupného čerpadla", "alarm_entity": "Zabezpečovací systém", "away_timeout_h": "Čas do dovolenky (h)"}},
-      "auto": {"title": "Stratégia AUTO", "description": "Ide o nastaviteľné heuristiky aplikácie, nie univerzálne technologické požiadavky.", "data": {"use_alarm": "Použiť alarm", "use_pump_activity": "Použiť štarty čerpadla", "use_volume": "Použiť odhad objemu", "high_starts_hour": "Vysoké zaťaženie (štarty/h)", "medium_volume_day_l": "Bežný objem za 24 h (L)", "high_volume_day_l": "Vysoký objem za 24 h (L)", "inactivity_timeout_h": "Čas nečinnosti (h)"}},
-      "schedules": {"title": "Programy dúchadla", "description": "Predvolené hodnoty vychádzajú z jednej aplikácie ECOkocka; overte ich pre svoju čistiareň.", "data": {"visit_on": "Návšteva ZAP (min)", "visit_off": "Návšteva VYP (min)", "residence_on": "Pobyt ZAP (min)", "residence_off": "Pobyt VYP (min)", "fullhouse_on": "Plný dom ZAP (min)", "fullhouse_off": "Plný dom VYP (min)", "holiday_on": "Dovolenka ZAP (min)", "holiday_off": "Dovolenka VYP (min)"}}
+      "user": {
+        "title": "Čistiareň",
+        "description": "Základné údaje a projektovaná kapacita. EO je zjednodušený parameter zaťaženia, nie počet obyvateľov.",
+        "data": {
+          "name": "Názov",
+          "manufacturer": "Výrobca (voliteľné)",
+          "model": "Model (voliteľné)",
+          "plant_type": "Typ čistiarne",
+          "nominal_eo": "Nominálna kapacita (EO)",
+          "tank_volume_l": "Objem nádrže (L)"
+        }
+      },
+      "household": {
+        "title": "Domácnosť a zaťaženie",
+        "description": "Počet obyvateľov a odhad EO sú samostatné hodnoty. Nula znamená neznámu hodnotu.",
+        "data": {
+          "occupants": "Počet obyvateľov",
+          "estimated_eo": "Odhad aktuálneho zaťaženia (EO)",
+          "load_factor": "Ručný faktor zaťaženia"
+        }
+      },
+      "blower": {
+        "title": "Dúchadlo",
+        "data": {
+          "blower_entity": "Spínač alebo ventilátor dúchadla",
+          "blower_power_w": "Menovitý príkon (W)",
+          "blower_airflow_l_min": "Prietok vzduchu (L/min)",
+          "blower_pressure_mbar": "Tlak (mbar)"
+        },
+        "description": "Vyberte entitu Home Assistant, ktorá ovláda iba prevzdušňovacie dúchadlo. Štítkové údaje sú voliteľné a informatívne."
+      },
+      "pump": {
+        "title": "Monitorovanie čerpadla",
+        "description": "Integrácia toto čerpadlo nikdy neovláda. Pre plavákové čerpadlo vyberte snímač príkonu.",
+        "data": {
+          "pump_entity": "Entita stavu čerpadla",
+          "pump_power_sensor": "Snímač príkonu čerpadla",
+          "pump_power_threshold_w": "Prah prevádzky (W)",
+          "volume_per_cycle_l": "Odhad objemu na cyklus (L)",
+          "pump_min_runtime_s": "Minimálny čas chodu (s)"
+        }
+      },
+      "optional": {
+        "title": "Voliteľné vstupy",
+        "data": {
+          "inlet_entity": "Stav vstupného čerpadla",
+          "inlet_power_sensor": "Príkon vstupného čerpadla",
+          "alarm_entity": "Zabezpečovací systém",
+          "away_timeout_h": "Čas do dovolenky (h)"
+        },
+        "description": "Priraďte voliteľné entity vstupného čerpadla a alarmu alebo ich nechajte prázdne, ak nie sú dostupné."
+      },
+      "auto": {
+        "title": "Stratégia AUTO",
+        "description": "Ide o nastaviteľné heuristiky aplikácie, nie univerzálne technologické požiadavky.",
+        "data": {
+          "use_alarm": "Použiť alarm",
+          "use_pump_activity": "Použiť štarty čerpadla",
+          "use_volume": "Použiť odhad objemu",
+          "high_starts_hour": "Vysoké zaťaženie (štarty/h)",
+          "medium_volume_day_l": "Bežný objem za 24 h (L)",
+          "high_volume_day_l": "Vysoký objem za 24 h (L)",
+          "inactivity_timeout_h": "Čas nečinnosti (h)"
+        }
+      },
+      "schedules": {
+        "title": "Programy dúchadla",
+        "description": "Predvolené hodnoty vychádzajú z jednej aplikácie ECOkocka; overte ich pre svoju čistiareň.",
+        "data": {
+          "visit_on": "Návšteva ZAP (min)",
+          "visit_off": "Návšteva VYP (min)",
+          "residence_on": "Pobyt ZAP (min)",
+          "residence_off": "Pobyt VYP (min)",
+          "fullhouse_on": "Plný dom ZAP (min)",
+          "fullhouse_off": "Plný dom VYP (min)",
+          "holiday_on": "Dovolenka ZAP (min)",
+          "holiday_off": "Dovolenka VYP (min)"
+        }
+      }
     },
-    "error": {"pump_source_required": "Vyberte stavovú entitu alebo snímač príkonu čerpadla.", "threshold_order": "Prahová hodnota vysokého objemu musí byť aspoň rovná bežnej."}
+    "error": {
+      "pump_source_required": "Vyberte stavovú entitu alebo snímač príkonu čerpadla.",
+      "threshold_order": "Prahová hodnota vysokého objemu musí byť aspoň rovná bežnej."
+    },
+    "flow_title": "{name}"
   },
-  "options": {"step": {"init": {"title": "Možnosti DWWT Managera", "menu_options": {"settings": "AUTO a čerpadlo", "schedules": "Programy dúchadla"}}, "settings": {"title": "AUTO a čerpadlo"}, "schedules": {"title": "Programy dúchadla"}}},
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti DWWT Managera",
+        "menu_options": {
+          "settings": "AUTO a čerpadlo",
+          "schedules": "Programy dúchadla"
+        }
+      },
+      "settings": {
+        "title": "AUTO a čerpadlo",
+        "description": "Nastavte detekciu čerpadla a zrozumiteľné vstupy používané režimom AUTO. Prahy sú heuristiky špecifické pre konkrétnu prevádzku.",
+        "data": {
+          "away_timeout_h": "Čas do režimu Dovolenka (h)",
+          "high_starts_hour": "Vysoké zaťaženie (štarty/h)",
+          "medium_volume_day_l": "Bežný objem za 24 h (L)",
+          "high_volume_day_l": "Vysoký objem za 24 h (L)",
+          "inactivity_timeout_h": "Čas nečinnosti (h)",
+          "volume_per_cycle_l": "Odhad objemu na cyklus (L)",
+          "pump_power_threshold_w": "Prah príkonu čerpadla (W)",
+          "use_alarm": "Používať stav alarmu",
+          "use_pump_activity": "Používať aktivitu čerpadla",
+          "use_volume": "Používať odhad objemu"
+        }
+      },
+      "schedules": {
+        "title": "Programy dúchadla",
+        "description": "Nastavte čas zapnutia a vypnutia dúchadla pre každý režim. Hodnoty overte podľa pokynov výrobcu čistiarne.",
+        "data": {
+          "visit_on": "Návšteva ZAP (min)",
+          "visit_off": "Návšteva VYP (min)",
+          "residence_on": "Pobyt ZAP (min)",
+          "residence_off": "Pobyt VYP (min)",
+          "fullhouse_on": "Plný dom ZAP (min)",
+          "fullhouse_off": "Plný dom VYP (min)",
+          "holiday_on": "Dovolenka ZAP (min)",
+          "holiday_off": "Dovolenka VYP (min)"
+        }
+      }
+    }
+  },
   "entity": {
-    "select": {"operating_mode": {"name": "Prevádzkový režim", "state": {"visit": "Návšteva", "residence": "Pobyt", "fullhouse": "Plný dom", "holiday": "Dovolenka", "auto": "AUTO"}}},
-    "switch": {"control": {"name": "Automatické riadenie dúchadla"}},
-    "binary_sensor": {"pump_running": {"name": "Čerpadlo v prevádzke"}, "blower_phase": {"name": "Fáza programu dúchadla"}, "inlet_running": {"name": "Vstupné čerpadlo v prevádzke"}},
+    "select": {
+      "operating_mode": {
+        "name": "Prevádzkový režim",
+        "state": {
+          "visit": "Návšteva",
+          "residence": "Pobyt",
+          "fullhouse": "Plný dom",
+          "holiday": "Dovolenka",
+          "auto": "AUTO"
+        }
+      }
+    },
+    "switch": {
+      "control": {
+        "name": "Automatické riadenie dúchadla"
+      }
+    },
+    "binary_sensor": {
+      "pump_running": {
+        "name": "Čerpadlo v prevádzke"
+      },
+      "blower_phase": {
+        "name": "Fáza programu dúchadla"
+      },
+      "inlet_running": {
+        "name": "Vstupné čerpadlo v prevádzke"
+      }
+    },
     "sensor": {
-      "active_mode": {"name": "Aktívny režim", "state": {"visit": "Návšteva", "residence": "Pobyt", "fullhouse": "Plný dom", "holiday": "Dovolenka"}},
-      "auto_reason": {"name": "Dôvod AUTO"}, "pump_starts_total": {"name": "Spustenia čerpadla celkom"}, "pumped_volume_total": {"name": "Odčerpaný objem celkom"},
-      "volume_day": {"name": "Odčerpaný objem dnes"}, "volume_week": {"name": "Odčerpaný objem tento týždeň"}, "volume_month": {"name": "Odčerpaný objem tento mesiac"}, "volume_year": {"name": "Odčerpaný objem tento rok"},
-      "starts_1h": {"name": "Spustenia za hodinu"}, "starts_6h": {"name": "Spustenia za 6 hodín"}, "starts_24h": {"name": "Spustenia za 24 hodín"}, "volume_24h": {"name": "Odčerpaný objem za 24 hodín"}, "phase_remaining": {"name": "Zostávajúci čas fázy"},
-      "last_pump_start": {"name": "Posledné spustenie čerpadla"}, "last_pump_stop": {"name": "Posledné zastavenie čerpadla"}, "last_mode_change": {"name": "Posledná zmena režimu"}
+      "active_mode": {
+        "name": "Aktívny režim",
+        "state": {
+          "visit": "Návšteva",
+          "residence": "Pobyt",
+          "fullhouse": "Plný dom",
+          "holiday": "Dovolenka"
+        }
+      },
+      "auto_reason": {
+        "name": "Dôvod AUTO"
+      },
+      "pump_starts_total": {
+        "name": "Spustenia čerpadla celkom"
+      },
+      "pumped_volume_total": {
+        "name": "Odčerpaný objem celkom"
+      },
+      "volume_day": {
+        "name": "Odčerpaný objem dnes"
+      },
+      "volume_week": {
+        "name": "Odčerpaný objem tento týždeň"
+      },
+      "volume_month": {
+        "name": "Odčerpaný objem tento mesiac"
+      },
+      "volume_year": {
+        "name": "Odčerpaný objem tento rok"
+      },
+      "starts_1h": {
+        "name": "Spustenia za hodinu"
+      },
+      "starts_6h": {
+        "name": "Spustenia za 6 hodín"
+      },
+      "starts_24h": {
+        "name": "Spustenia za 24 hodín"
+      },
+      "volume_24h": {
+        "name": "Odčerpaný objem za 24 hodín"
+      },
+      "phase_remaining": {
+        "name": "Zostávajúci čas fázy"
+      },
+      "last_pump_start": {
+        "name": "Posledné spustenie čerpadla"
+      },
+      "last_pump_stop": {
+        "name": "Posledné zastavenie čerpadla"
+      },
+      "last_mode_change": {
+        "name": "Posledná zmena režimu"
+      }
+    }
+  },
+  "selector": {
+    "plant_type": {
+      "options": {
+        "aerated": "Prevzdušňovacia čistiareň",
+        "other": "Iný typ čistiarne"
+      }
     }
   }
 }
