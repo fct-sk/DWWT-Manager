@@ -9,12 +9,13 @@ from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult, OptionsFlowWithReload
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers.selector import (
-    BooleanSelector, EntitySelector, EntitySelectorConfig, NumberSelector,
+    BooleanSelector, DeviceSelector, DeviceSelectorConfig, EntitySelector, EntitySelectorConfig, NumberSelector,
     NumberSelectorConfig, NumberSelectorMode, SelectSelector, SelectSelectorConfig,
     SelectSelectorMode, TextSelector,
 )
 
 from .const import *  # noqa: F403 - config schemas intentionally mirror constants
+from .device_resolver import DeviceResolutionError, DeviceRole, async_resolve_device
 
 
 def _num(minimum: float = 0, maximum: float = 100000, step: float = 1) -> NumberSelector:
@@ -23,6 +24,10 @@ def _num(minimum: float = 0, maximum: float = 100000, step: float = 1) -> Number
 
 def _entity(domains: list[str]) -> EntitySelector:
     return EntitySelector(EntitySelectorConfig(domain=domains))
+
+
+def _device() -> DeviceSelector:
+    return DeviceSelector(DeviceSelectorConfig())
 
 
 def _suggest(schema: vol.Schema, values: dict[str, Any]) -> vol.Schema:
@@ -49,21 +54,19 @@ HOUSEHOLD_SCHEMA = vol.Schema({
     vol.Optional(CONF_LOAD_FACTOR, default=1): _num(0, 10, 0.1),
 })
 BLOWER_SCHEMA = vol.Schema({
-    vol.Required(CONF_BLOWER_ENTITY): _entity(["switch", "fan"]),
+    vol.Required(CONF_BLOWER_DEVICE): _device(),
     vol.Optional(CONF_BLOWER_POWER, default=0): _num(),
     vol.Optional(CONF_BLOWER_AIRFLOW, default=0): _num(),
     vol.Optional(CONF_BLOWER_PRESSURE, default=0): _num(),
 })
 PUMP_SCHEMA = vol.Schema({
-    vol.Optional(CONF_PUMP_ENTITY): _entity(["switch", "binary_sensor"]),
-    vol.Optional(CONF_PUMP_POWER_SENSOR): _entity(["sensor"]),
+    vol.Required(CONF_PUMP_DEVICE): _device(),
     vol.Required(CONF_PUMP_POWER_THRESHOLD, default=100): _num(0, 100000, 1),
     vol.Required(CONF_VOLUME_PER_CYCLE, default=50): _num(0, 100000, 0.1),
     vol.Optional(CONF_PUMP_MIN_RUNTIME, default=1): _num(0, 3600, 1),
 })
 OPTIONAL_SCHEMA = vol.Schema({
-    vol.Optional(CONF_INLET_ENTITY): _entity(["switch", "binary_sensor"]),
-    vol.Optional(CONF_INLET_POWER_SENSOR): _entity(["sensor"]),
+    vol.Optional(CONF_INLET_DEVICE): _device(),
     vol.Optional(CONF_ALARM_ENTITY): _entity(["alarm_control_panel"]),
     vol.Required(CONF_AWAY_TIMEOUT, default=72): _num(1, 8760, 1),
 })
@@ -94,7 +97,7 @@ def pack_schedules(values: dict[str, Any]) -> dict[str, dict[str, int]]:
 
 
 class DwwtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
+    VERSION = 2
 
     def __init__(self) -> None:
         self._data: dict[str, Any] = {}
@@ -106,14 +109,27 @@ class DwwtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self._step("household", HOUSEHOLD_SCHEMA, user_input, "blower")
 
     async def async_step_blower(self, user_input=None) -> ConfigFlowResult:
+        if user_input is not None:
+            try:
+                async_resolve_device(self.hass, user_input[CONF_BLOWER_DEVICE], DeviceRole.BLOWER)
+            except DeviceResolutionError as err:
+                return self.async_show_form(step_id="blower", data_schema=BLOWER_SCHEMA, errors={"base": err.translation_key})
         return await self._step("blower", BLOWER_SCHEMA, user_input, "pump")
 
     async def async_step_pump(self, user_input=None) -> ConfigFlowResult:
-        if user_input is not None and not (user_input.get(CONF_PUMP_ENTITY) or user_input.get(CONF_PUMP_POWER_SENSOR)):
-            return self.async_show_form(step_id="pump", data_schema=PUMP_SCHEMA, errors={"base": "pump_source_required"})
+        if user_input is not None:
+            try:
+                async_resolve_device(self.hass, user_input[CONF_PUMP_DEVICE], DeviceRole.PUMP)
+            except DeviceResolutionError as err:
+                return self.async_show_form(step_id="pump", data_schema=PUMP_SCHEMA, errors={"base": err.translation_key})
         return await self._step("pump", PUMP_SCHEMA, user_input, "optional")
 
     async def async_step_optional(self, user_input=None) -> ConfigFlowResult:
+        if user_input is not None and user_input.get(CONF_INLET_DEVICE):
+            try:
+                async_resolve_device(self.hass, user_input[CONF_INLET_DEVICE], DeviceRole.INLET)
+            except DeviceResolutionError as err:
+                return self.async_show_form(step_id="optional", data_schema=OPTIONAL_SCHEMA, errors={"base": err.translation_key})
         return await self._step("optional", OPTIONAL_SCHEMA, user_input, "auto")
 
     async def async_step_auto(self, user_input=None) -> ConfigFlowResult:
@@ -143,7 +159,35 @@ class DwwtOptionsFlow(OptionsFlowWithReload):
     """Edit runtime settings and schedules; setup identity remains entry data."""
 
     async def async_step_init(self, user_input=None) -> ConfigFlowResult:
-        return self.async_show_menu(step_id="init", menu_options=["settings", "schedules"])
+        return self.async_show_menu(step_id="init", menu_options=["devices", "settings", "schedules"])
+
+    async def async_step_devices(self, user_input=None) -> ConfigFlowResult:
+        values = {**self.config_entry.data, **self.config_entry.options}
+        schema = vol.Schema({
+            vol.Required(CONF_BLOWER_DEVICE): _device(),
+            vol.Required(CONF_PUMP_DEVICE): _device(),
+            vol.Optional(CONF_INLET_DEVICE): _device(),
+        })
+        if user_input is not None:
+            for key, role in (
+                (CONF_BLOWER_DEVICE, DeviceRole.BLOWER),
+                (CONF_PUMP_DEVICE, DeviceRole.PUMP),
+                (CONF_INLET_DEVICE, DeviceRole.INLET),
+            ):
+                if device_id := user_input.get(key):
+                    try:
+                        async_resolve_device(self.hass, device_id, role)
+                    except DeviceResolutionError as err:
+                        return self.async_show_form(
+                            step_id="devices",
+                            data_schema=_suggest(schema, {**values, **user_input}),
+                            errors={"base": err.translation_key},
+                        )
+            updated = {**self.config_entry.options, **user_input}
+            if not user_input.get(CONF_INLET_DEVICE):
+                updated.pop(CONF_INLET_DEVICE, None)
+            return self.async_create_entry(data=updated)
+        return self.async_show_form(step_id="devices", data_schema=_suggest(schema, values))
 
     async def async_step_settings(self, user_input=None) -> ConfigFlowResult:
         if user_input is not None:

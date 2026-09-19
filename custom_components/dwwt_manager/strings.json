@@ -40,14 +40,14 @@
       "blower": {
         "title": "Blower",
         "data": {
-          "blower_entity": "Blower switch or fan",
+          "blower_device_id": "Blower power device",
           "blower_power_w": "Rated power (W, optional)",
           "blower_airflow_l_min": "Airflow (L/min, optional)",
           "blower_pressure_mbar": "Pressure (mbar, optional)"
         },
         "description": "Select the Home Assistant entity that controls only the aeration blower. Nameplate values are optional and informational.",
         "data_description": {
-          "blower_entity": "Existing switch or fan entity that DWWT Manager may turn on and off. This is the only controlled equipment.",
+          "blower_device_id": "Select the complete smart-plug device. The integration automatically discovers its blower power switch.",
           "blower_power_w": "Optional rated electrical input from the blower nameplate, in watts; informational only.",
           "blower_airflow_l_min": "Optional rated airflow from the blower nameplate, in liters per minute; informational only.",
           "blower_pressure_mbar": "Optional rated operating pressure, in millibars; informational only."
@@ -57,15 +57,13 @@
         "title": "Wastewater/sludge pump monitoring",
         "description": "The integration never controls this pump. Select a power sensor for float-controlled pumps, or a state entity.",
         "data": {
-          "pump_entity": "Pump state entity (optional)",
-          "pump_power_sensor": "Pump power sensor (optional)",
+          "pump_device_id": "Outlet pump power device",
           "pump_power_threshold_w": "Running threshold (W)",
           "volume_per_cycle_l": "Estimated volume per cycle (L)",
           "pump_min_runtime_s": "Minimum runtime (s)"
         },
         "data_description": {
-          "pump_entity": "Optional switch or binary sensor representing actual pump operation. Used when no power sensor is selected.",
-          "pump_power_sensor": "Optional power sensor in watts. When selected, it takes precedence over the pump state entity.",
+          "pump_device_id": "Select the complete outlet-pump smart plug. The integration automatically uses its power sensor and never controls its switch.",
           "pump_power_threshold_w": "The pump is considered running when measured power is at or above this value. Choose it above standby noise and below stable running power.",
           "volume_per_cycle_l": "Estimated discharged liters assigned to every validated pump start. This is an estimate, not a flow measurement.",
           "pump_min_runtime_s": "Activity shorter than this duration is ignored as noise or a startup transient."
@@ -74,15 +72,13 @@
       "optional": {
         "title": "Optional inputs",
         "data": {
-          "inlet_entity": "Inlet pump state entity",
-          "inlet_power_sensor": "Inlet pump power sensor",
+          "inlet_device_id": "Inlet pump power device (optional)",
           "alarm_entity": "Alarm control panel",
           "away_timeout_h": "Holiday timeout (hours)"
         },
         "description": "Assign optional inlet-pump and alarm entities, or leave them empty when they are not available.",
         "data_description": {
-          "inlet_entity": "Optional switch or binary sensor for monitoring inlet-pump activity. DWWT Manager does not control it.",
-          "inlet_power_sensor": "Optional inlet-pump power sensor. It takes precedence over the inlet state entity and currently uses the pump power threshold.",
+          "inlet_device_id": "Select the complete inlet-pump smart plug. The integration automatically uses its power sensor and does not control the pump.",
           "alarm_entity": "Optional alarm control panel used by AUTO to distinguish night, short absence and prolonged absence.",
           "away_timeout_h": "Continuous armed-away duration after which AUTO changes from Visit to Holiday."
         }
@@ -135,8 +131,12 @@
       }
     },
     "error": {
-      "pump_source_required": "Select either a pump state entity or power sensor.",
-      "threshold_order": "The high volume threshold must be at least the normal threshold."
+      "threshold_order": "The high volume threshold must be at least the normal threshold.",
+      "device_not_found": "The selected device no longer exists in Home Assistant.",
+      "blower_switch_missing": "The blower device has no switch entity. Select a device with a controllable switch.",
+      "blower_switch_ambiguous": "The blower device has multiple switches. Select a dedicated smart plug with one switch.",
+      "pump_power_missing": "The pump device has no power sensor with device_class power.",
+      "pump_power_ambiguous": "The pump device has multiple power sensors. Select a dedicated smart plug with one power sensor."
     }
   },
   "options": {
@@ -145,7 +145,8 @@
         "title": "DWWT Manager options",
         "menu_options": {
           "settings": "AUTO and pump settings",
-          "schedules": "Blower schedules"
+          "schedules": "Blower schedules",
+          "devices": "Power devices"
         }
       },
       "settings": {
@@ -199,7 +200,29 @@
           "holiday_on": "Minutes the blower remains on during each Holiday cycle.",
           "holiday_off": "Minutes the blower remains off during each Holiday cycle."
         }
+      },
+      "devices": {
+        "title": "Power devices",
+        "description": "Change the smart plugs assigned to the blower and pumps. The integration reloads automatically after saving.",
+        "data": {
+          "blower_device_id": "Blower power device",
+          "pump_device_id": "Outlet pump power device",
+          "inlet_device_id": "Inlet pump power device (optional)"
+        },
+        "data_description": {
+          "blower_device_id": "Must expose exactly one controllable switch.",
+          "pump_device_id": "Must expose exactly one power sensor; its switch is never controlled.",
+          "inlet_device_id": "Optional device with one power sensor; its switch is never controlled."
+        }
       }
+    },
+    "error": {
+      "threshold_order": "The high volume threshold must be at least the normal threshold.",
+      "device_not_found": "The selected device no longer exists in Home Assistant.",
+      "blower_switch_missing": "The blower device has no switch entity. Select a device with a controllable switch.",
+      "blower_switch_ambiguous": "The blower device has multiple switches. Select a dedicated smart plug with one switch.",
+      "pump_power_missing": "The pump device has no power sensor with device_class power.",
+      "pump_power_ambiguous": "The pump device has multiple power sensors. Select a dedicated smart plug with one power sensor."
     }
   },
   "entity": {

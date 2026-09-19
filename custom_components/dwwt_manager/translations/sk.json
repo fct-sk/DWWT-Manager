@@ -39,14 +39,14 @@
       "blower": {
         "title": "Dúchadlo",
         "data": {
-          "blower_entity": "Spínač alebo ventilátor dúchadla",
+          "blower_device_id": "Zásuvka dúchadla",
           "blower_power_w": "Menovitý príkon (W)",
           "blower_airflow_l_min": "Prietok vzduchu (L/min)",
           "blower_pressure_mbar": "Tlak (mbar)"
         },
         "description": "Vyberte entitu Home Assistant, ktorá ovláda iba prevzdušňovacie dúchadlo. Štítkové údaje sú voliteľné a informatívne.",
         "data_description": {
-          "blower_entity": "Existujúci spínač alebo ventilátor, ktorý môže DWWT Manager zapínať a vypínať. Ide o jediné ovládané zariadenie.",
+          "blower_device_id": "Vyberte celé zariadenie zásuvky. Integrácia z neho automaticky nájde spínač napájania dúchadla.",
           "blower_power_w": "Voliteľný menovitý príkon zo štítku dúchadla vo wattoch; iba informatívny údaj.",
           "blower_airflow_l_min": "Voliteľný menovitý prietok vzduchu zo štítku v litroch za minútu; iba informatívny údaj.",
           "blower_pressure_mbar": "Voliteľný menovitý prevádzkový tlak v milibaroch; iba informatívny údaj."
@@ -56,15 +56,13 @@
         "title": "Monitorovanie čerpadla",
         "description": "Integrácia toto čerpadlo nikdy neovláda. Pre plavákové čerpadlo vyberte snímač príkonu.",
         "data": {
-          "pump_entity": "Entita stavu čerpadla",
-          "pump_power_sensor": "Snímač príkonu čerpadla",
+          "pump_device_id": "Zásuvka odtokového čerpadla",
           "pump_power_threshold_w": "Prah prevádzky (W)",
           "volume_per_cycle_l": "Odhad objemu na cyklus (L)",
           "pump_min_runtime_s": "Minimálny čas chodu (s)"
         },
         "data_description": {
-          "pump_entity": "Voliteľný spínač alebo binárny senzor skutočného chodu čerpadla. Použije sa, ak nie je vybraný snímač príkonu.",
-          "pump_power_sensor": "Voliteľný snímač príkonu vo wattoch. Ak je vybraný, má prednosť pred stavovou entitou čerpadla.",
+          "pump_device_id": "Vyberte celé zariadenie zásuvky odtokového čerpadla. Integrácia automaticky použije jeho výkonový senzor; spínač nikdy neovláda.",
           "pump_power_threshold_w": "Čerpadlo sa považuje za spustené pri príkone rovnajúcom sa alebo vyššom než táto hodnota. Prah nastavte nad pohotovostný šum a pod stabilný prevádzkový príkon.",
           "volume_per_cycle_l": "Odhad litrov odčerpaných pri každom potvrdenom štarte. Ide o odhad, nie priame meranie prietoku.",
           "pump_min_runtime_s": "Aktivita kratšia než tento čas sa ignoruje ako šum alebo krátka štartovacia špička."
@@ -73,15 +71,13 @@
       "optional": {
         "title": "Voliteľné vstupy",
         "data": {
-          "inlet_entity": "Stav vstupného čerpadla",
-          "inlet_power_sensor": "Príkon vstupného čerpadla",
+          "inlet_device_id": "Zásuvka prítokového čerpadla (voliteľné)",
           "alarm_entity": "Zabezpečovací systém",
           "away_timeout_h": "Čas do dovolenky (h)"
         },
         "description": "Priraďte voliteľné entity vstupného čerpadla a alarmu alebo ich nechajte prázdne, ak nie sú dostupné.",
         "data_description": {
-          "inlet_entity": "Voliteľný spínač alebo binárny senzor na monitorovanie vstupného čerpadla. DWWT Manager ho neovláda.",
-          "inlet_power_sensor": "Voliteľný snímač príkonu vstupného čerpadla. Má prednosť pred stavovou entitou a zatiaľ používa rovnaký výkonový prah ako odpadové čerpadlo.",
+          "inlet_device_id": "Vyberte celé zariadenie zásuvky prítokového čerpadla. Integrácia automaticky použije jeho výkonový senzor a čerpadlo neovláda.",
           "alarm_entity": "Voliteľný alarm používaný režimom AUTO na rozlíšenie noci, krátkej neprítomnosti a dlhšej neprítomnosti.",
           "away_timeout_h": "Nepretržitý čas stavu Zapnuté mimo domu, po ktorom AUTO prepne z režimu Návšteva na Dovolenka."
         }
@@ -134,8 +130,12 @@
       }
     },
     "error": {
-      "pump_source_required": "Vyberte stavovú entitu alebo snímač príkonu čerpadla.",
-      "threshold_order": "Prahová hodnota vysokého objemu musí byť aspoň rovná bežnej."
+      "threshold_order": "Prahová hodnota vysokého objemu musí byť aspoň rovná bežnej.",
+      "device_not_found": "Vybrané zariadenie už v Home Assistant neexistuje.",
+      "blower_switch_missing": "Zariadenie dúchadla nemá entitu switch. Vyberte zariadenie s ovládateľným spínačom.",
+      "blower_switch_ambiguous": "Zariadenie dúchadla má viac spínačov. Vyberte samostatnú zásuvku s jedným spínačom.",
+      "pump_power_missing": "Zariadenie čerpadla nemá výkonový senzor s device_class power.",
+      "pump_power_ambiguous": "Zariadenie čerpadla má viac výkonových senzorov. Vyberte samostatnú zásuvku s jedným výkonovým senzorom."
     },
     "flow_title": "{name}"
   },
@@ -145,7 +145,8 @@
         "title": "Možnosti DWWT Managera",
         "menu_options": {
           "settings": "AUTO a čerpadlo",
-          "schedules": "Programy dúchadla"
+          "schedules": "Programy dúchadla",
+          "devices": "Napájacie zariadenia"
         }
       },
       "settings": {
@@ -199,7 +200,29 @@
           "holiday_on": "Počet minút zapnutia dúchadla v každom cykle režimu Dovolenka.",
           "holiday_off": "Počet minút vypnutia dúchadla v každom cykle režimu Dovolenka."
         }
+      },
+      "devices": {
+        "title": "Napájacie zariadenia",
+        "description": "Zmeňte zásuvky priradené k dúchadlu a čerpadlám. Po uložení sa integrácia automaticky znovu načíta.",
+        "data": {
+          "blower_device_id": "Zásuvka dúchadla",
+          "pump_device_id": "Zásuvka odtokového čerpadla",
+          "inlet_device_id": "Zásuvka prítokového čerpadla (voliteľné)"
+        },
+        "data_description": {
+          "blower_device_id": "Musí poskytovať práve jeden ovládateľný spínač.",
+          "pump_device_id": "Musí poskytovať práve jeden výkonový senzor; spínač sa neovláda.",
+          "inlet_device_id": "Voliteľné zariadenie s jedným výkonovým senzorom; jeho spínač sa neovláda."
+        }
       }
+    },
+    "error": {
+      "threshold_order": "Prahová hodnota vysokého objemu musí byť aspoň rovná bežnej.",
+      "device_not_found": "Vybrané zariadenie už v Home Assistant neexistuje.",
+      "blower_switch_missing": "Zariadenie dúchadla nemá entitu switch. Vyberte zariadenie s ovládateľným spínačom.",
+      "blower_switch_ambiguous": "Zariadenie dúchadla má viac spínačov. Vyberte samostatnú zásuvku s jedným spínačom.",
+      "pump_power_missing": "Zariadenie čerpadla nemá výkonový senzor s device_class power.",
+      "pump_power_ambiguous": "Zariadenie čerpadla má viac výkonových senzorov. Vyberte samostatnú zásuvku s jedným výkonovým senzorom."
     }
   },
   "entity": {

@@ -21,13 +21,15 @@ Copy `custom_components/dwwt_manager` into the Home Assistant configuration dire
 
 ## Configuration
 
+The three equipment assignments use Home Assistant device selection rather than entity IDs. They can be changed later under **Configure → Power devices**. Dedicated smart plugs are recommended: the blower device must expose one switch, while each pump device must expose one sensor with the `power` device class.
+
 The flow asks for:
 
 1. Plant identity, tank volume, and nominal design EO.
 2. Occupants and estimated current EO. Zero means unknown; these values are not silently equated.
-3. A blower `switch` or `fan` and optional nameplate data.
-4. A pump state entity and/or power sensor, running threshold, and estimated discharge volume per cycle.
-5. Optional inlet-pump and `alarm_control_panel` entities.
+3. A Home Assistant device representing the blower smart plug; its single switch entity is discovered automatically.
+4. A device representing the outlet-pump smart plug; its power sensor is discovered automatically, while its switch is never controlled.
+5. An optional inlet-pump smart-plug device and optional `alarm_control_panel`; the inlet power sensor is discovered automatically.
 6. AUTO signals and thresholds.
 7. Editable ON/OFF durations for each manual schedule.
 
