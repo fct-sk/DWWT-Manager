@@ -20,10 +20,11 @@ from .const import (
     CONF_PUMP_ENTITY, CONF_PUMP_MIN_RUNTIME, CONF_PUMP_POWER_SENSOR,
     CONF_MANUAL_MODE, CONF_MODE_SELECTION, CONF_NOMINAL_EO, CONF_PUMP_POWER_THRESHOLD, CONF_SCHEDULES, CONF_TANK_VOLUME, CONF_USE_ALARM, CONF_USE_PUMP_ACTIVITY,
     CONF_USE_VOLUME, CONF_VOLUME_PER_CYCLE, AerationConfiguration, DEFAULTS, ModeSelection,
-    OperatingMode, SIGNAL_UPDATE,
+    CONF_BLOWER_REGISTRY_ID, OperatingMode, SIGNAL_UPDATE,
 )
 from .aeration import AerationContext, HeuristicAerationStrategyV1, ManualAerationStrategy, NoHouseholdAdaptation, calculate_final_schedule
 from .models import PersistentState, PumpCycle, cycle_count, decide_auto_mode, stabilize_auto_decision, volume_for_period, volume_in_window
+from .device_resolver import DeviceResolutionError, async_resolve_blower
 from .store import DwwtStore
 
 _LOGGER = logging.getLogger(__name__)
@@ -297,7 +298,16 @@ class DwwtManager:
                 self.state.blower_phase_started = now
             deadline = self.state.blower_phase_deadline or (self.state.blower_phase_started + duration)
             self.state.blower_phase_deadline = deadline
-            blower_id = self.config[CONF_BLOWER_ENTITY]
+            try:
+                selected = async_resolve_blower(
+                    self.hass, self.config.get(CONF_BLOWER_ENTITY), self.config.get(CONF_BLOWER_REGISTRY_ID),
+                )
+            except DeviceResolutionError as err:
+                _LOGGER.error("Blower needs reconfiguration: %s", err.translation_key)
+                self.control_enabled = False
+                self._notify()
+                return
+            blower_id = selected.switch_entity_id
             blower = self.hass.states.get(blower_id)
             if blower is None or blower.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
                 _LOGGER.warning("Blower %s unavailable; retaining phase and retrying", blower_id)

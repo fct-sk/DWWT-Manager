@@ -4,11 +4,13 @@ from __future__ import annotations
 import logging
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryError
+from homeassistant.helpers import entity_registry as er
 
 from .const import (
-    CONF_BLOWER_DEVICE,
     CONF_BLOWER_ENTITY,
+    CONF_BLOWER_REGISTRY_ID,
     CONF_INLET_DEVICE,
     CONF_INLET_ENTITY,
     CONF_INLET_POWER_SENSOR,
@@ -22,7 +24,10 @@ from .const import (
 )
 from .device_resolver import (
     DeviceResolutionError,
+    DeviceRole,
     async_device_id_from_entity,
+    async_migrate_blower_config,
+    async_resolve_blower,
     async_resolve_config,
 )
 from .manager import DwwtManager
@@ -35,16 +40,48 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         resolved_entities = async_resolve_config(hass, config)
     except DeviceResolutionError as err:
+        if err.role == DeviceRole.BLOWER:
+            raise ConfigEntryError(
+                f"{err.translation_key}: select the blower power switch using Reconfigure."
+            ) from err
         raise ConfigEntryNotReady(
             f"Unable to resolve {err.role.value} device: {err.translation_key}"
         ) from err
 
+    # Resolve first, then persist the same entity's registry identity/current name.
+    # No sensor or owner-device reference is added to blower control config.
+    selected_blower = async_resolve_blower(
+        hass, config.get(CONF_BLOWER_ENTITY), config.get(CONF_BLOWER_REGISTRY_ID),
+    )
+    if any(config.get(key) != value for key, value in selected_blower.as_config().items()):
+        if CONF_BLOWER_ENTITY in entry.options:
+            hass.config_entries.async_update_entry(entry, options={**entry.options, **selected_blower.as_config()})
+        else:
+            hass.config_entries.async_update_entry(entry, data={**entry.data, **selected_blower.as_config()})
     manager = DwwtManager(hass, entry)
     manager.config.update(resolved_entities)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = manager
     await manager.async_start()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
+    @callback
+    def blower_registry_changed(event):
+        entity_id = selected_blower.switch_entity_id
+        if event.data.get("entity_id") != entity_id and event.data.get("old_entity_id") != entity_id:
+            return
+        changes = event.data.get("changes", {})
+        if event.data.get("action") != "remove" and not (
+            event.data.get("old_entity_id") or "disabled_by" in changes or "device_id" in changes
+        ):
+            return
+
+        async def reload_blower():
+            await manager.async_set_control_enabled(False)
+            await hass.config_entries.async_reload(entry.entry_id)
+
+        hass.async_create_task(reload_blower())
+
+    entry.async_on_unload(hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, blower_registry_changed))
     return True
 
 
@@ -64,7 +101,6 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if version < 2:
         mappings = (
-            (CONF_BLOWER_DEVICE, (CONF_BLOWER_ENTITY,)),
             (CONF_PUMP_DEVICE, (CONF_PUMP_POWER_SENSOR, CONF_PUMP_ENTITY)),
             (CONF_INLET_DEVICE, (CONF_INLET_POWER_SENSOR, CONF_INLET_ENTITY)),
         )
@@ -78,7 +114,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             elif device_key != CONF_INLET_DEVICE:
                 _LOGGER.error("Cannot migrate %s: source entity has no registered device", device_key)
                 return False
-        for key in (CONF_BLOWER_ENTITY, CONF_PUMP_ENTITY, CONF_PUMP_POWER_SENSOR, CONF_INLET_ENTITY, CONF_INLET_POWER_SENSOR):
+        for key in (CONF_PUMP_ENTITY, CONF_PUMP_POWER_SENSOR, CONF_INLET_ENTITY, CONF_INLET_POWER_SENSOR):
             data.pop(key, None)
         version = 2
 
@@ -96,9 +132,10 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             container[CONF_SCHEDULES] = migrated
         version = 3
 
+    if version < 5:
+        data, options = async_migrate_blower_config(hass, data, options)
+        version = 5
+
     hass.config_entries.async_update_entry(entry, data=data, options=options, version=version)
     _LOGGER.info("Migrated DWWT Manager config entry %s to version %s", entry.entry_id, version)
     return True
-
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    await hass.config_entries.async_reload(entry.entry_id)

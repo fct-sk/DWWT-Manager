@@ -15,7 +15,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import *  # noqa: F403 - config schemas intentionally mirror constants
-from .device_resolver import DeviceResolutionError, DeviceRole, async_resolve_device
+from .device_resolver import DeviceResolutionError, DeviceRole, async_resolve_blower, async_resolve_device
 
 
 def _num(minimum: float = 0, maximum: float = 100000, step: float = 1) -> NumberSelector:
@@ -54,7 +54,7 @@ HOUSEHOLD_SCHEMA = vol.Schema({
     vol.Optional(CONF_LOAD_FACTOR, default=1): _num(0, 10, 0.1),
 })
 BLOWER_SCHEMA = vol.Schema({
-    vol.Required(CONF_BLOWER_DEVICE): _device(),
+    vol.Required(CONF_BLOWER_ENTITY): _entity(["switch"]),
     vol.Optional(CONF_BLOWER_POWER, default=0): _num(),
     vol.Optional(CONF_BLOWER_AIRFLOW, default=60): _num(),
     vol.Optional(CONF_BLOWER_PRESSURE, default=0): _num(),
@@ -105,7 +105,7 @@ def pack_schedules(values: dict[str, Any]) -> dict[str, dict[str, int]]:
 
 
 class DwwtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 3
+    VERSION = 5
 
     def __init__(self) -> None:
         self._data: dict[str, Any] = {}
@@ -119,9 +119,10 @@ class DwwtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_blower(self, user_input=None) -> ConfigFlowResult:
         if user_input is not None:
             try:
-                async_resolve_device(self.hass, user_input[CONF_BLOWER_DEVICE], DeviceRole.BLOWER)
+                resolved = async_resolve_blower(self.hass, user_input[CONF_BLOWER_ENTITY])
             except DeviceResolutionError as err:
                 return self.async_show_form(step_id="blower", data_schema=BLOWER_SCHEMA, errors={"base": err.translation_key})
+            user_input = {**user_input, **resolved.as_config()}
         return await self._step("blower", BLOWER_SCHEMA, user_input, "method")
 
     async def async_step_method(self, user_input=None) -> ConfigFlowResult:
@@ -167,6 +168,38 @@ class DwwtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._data.update(user_input)
         return await getattr(self, f"async_step_{next_step}")()
 
+    async def async_step_reconfigure(self, user_input=None) -> ConfigFlowResult:
+        """Repair a removed output or an unresolved legacy multi-switch device."""
+        entry = self._get_reconfigure_entry()
+        values = {**entry.data, **entry.options}
+        errors = {}
+        if user_input is not None:
+            try:
+                resolved = async_resolve_blower(self.hass, user_input[CONF_BLOWER_ENTITY])
+            except DeviceResolutionError as err:
+                errors["base"] = err.translation_key
+            else:
+                data, options = dict(entry.data), dict(entry.options)
+                for container in (data, options):
+                    container.pop(CONF_BLOWER_DEVICE, None)
+                    container.pop(CONF_BLOWER_ENTITY, None)
+                    container.pop(CONF_BLOWER_REGISTRY_ID, None)
+                data.update(resolved.as_config())
+                return self.async_update_reload_and_abort(entry, data=data, options=options)
+        else:
+            try:
+                values[CONF_BLOWER_ENTITY] = async_resolve_blower(
+                    self.hass, values.get(CONF_BLOWER_ENTITY), values.get(CONF_BLOWER_REGISTRY_ID),
+                ).switch_entity_id
+            except DeviceResolutionError:
+                pass
+        # A missing selection has no default, not an invalid None selector value.
+        selected = (user_input or values).get(CONF_BLOWER_ENTITY)
+        marker = vol.Required(CONF_BLOWER_ENTITY, default=selected) if selected else vol.Required(CONF_BLOWER_ENTITY)
+        return self.async_show_form(
+            step_id="reconfigure", data_schema=vol.Schema({marker: _entity(["switch"])}), errors=errors,
+        )
+
     @staticmethod
     def async_get_options_flow(config_entry):
         return DwwtOptionsFlow()
@@ -181,13 +214,19 @@ class DwwtOptionsFlow(OptionsFlowWithReload):
     async def async_step_devices(self, user_input=None) -> ConfigFlowResult:
         values = {**self.config_entry.data, **self.config_entry.options}
         schema = vol.Schema({
-            vol.Required(CONF_BLOWER_DEVICE): _device(),
+            vol.Required(CONF_BLOWER_ENTITY): _entity(["switch"]),
             vol.Required(CONF_PUMP_DEVICE): _device(),
             vol.Optional(CONF_INLET_DEVICE): _device(),
         })
         if user_input is not None:
+            try:
+                resolved = async_resolve_blower(self.hass, user_input[CONF_BLOWER_ENTITY])
+            except DeviceResolutionError as err:
+                return self.async_show_form(
+                    step_id="devices", data_schema=_suggest(schema, {**values, **user_input}),
+                    errors={"base": err.translation_key},
+                )
             for key, role in (
-                (CONF_BLOWER_DEVICE, DeviceRole.BLOWER),
                 (CONF_PUMP_DEVICE, DeviceRole.PUMP),
                 (CONF_INLET_DEVICE, DeviceRole.INLET),
             ):
@@ -200,7 +239,8 @@ class DwwtOptionsFlow(OptionsFlowWithReload):
                             data_schema=_suggest(schema, {**values, **user_input}),
                             errors={"base": err.translation_key},
                         )
-            updated = {**self.config_entry.options, **user_input}
+            updated = {**self.config_entry.options, **user_input, **resolved.as_config()}
+            updated.pop(CONF_BLOWER_DEVICE, None)
             if not user_input.get(CONF_INLET_DEVICE):
                 updated.pop(CONF_INLET_DEVICE, None)
             return self.async_create_entry(data=updated)

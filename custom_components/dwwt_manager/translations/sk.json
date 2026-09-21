@@ -39,17 +39,17 @@
       "blower": {
         "title": "Dúchadlo",
         "data": {
-          "blower_device_id": "Zásuvka dúchadla",
           "blower_power_w": "Menovitý príkon (W)",
           "blower_airflow_l_min": "Prietok vzduchu (L/min)",
-          "blower_pressure_mbar": "Tlak (mbar)"
+          "blower_pressure_mbar": "Tlak (mbar)",
+          "blower_entity": "Spínač napájania dúchadla"
         },
-        "description": "Vyberte entitu Home Assistant, ktorá ovláda iba prevzdušňovacie dúchadlo. Štítkové údaje sú voliteľné a informatívne.",
+        "description": "Zvoľte spínač napájania dúchadla. Menovitý príkon, prietok a tlak zostávajú parametrami dúchadla, nie odkazmi na meracie senzory.",
         "data_description": {
-          "blower_device_id": "Vyberte celé zariadenie zásuvky. Integrácia z neho automaticky nájde spínač napájania dúchadla.",
           "blower_power_w": "Voliteľný menovitý príkon zo štítku dúchadla vo wattoch; iba informatívny údaj.",
           "blower_airflow_l_min": "Voliteľný menovitý prietok vzduchu zo štítku v litroch za minútu; iba informatívny údaj.",
-          "blower_pressure_mbar": "Voliteľný menovitý prevádzkový tlak v milibaroch; iba informatívny údaj."
+          "blower_pressure_mbar": "Voliteľný menovitý prevádzkový tlak v milibaroch; iba informatívny údaj.",
+          "blower_entity": "Vyberte konkrétnu switch entitu, ktorá napája dúchadlo. Ostatné výstupy toho istého zariadenia sa neovládajú."
         }
       },
       "pump": {
@@ -151,18 +151,34 @@
         },
         "title": "Výber prevádzkového režimu",
         "description": "Vyberte ručné nastavenie jedného zo štyroch pevných režimov alebo automatický výber podľa signálov z Home Assistant."
+      },
+      "reconfigure": {
+        "description": "Vyberte výstup pre dúchadlo. Pri odstránenej entite alebo nejednoznačnom starom zariadení integrácia nikdy sama nezvolí náhradný spínač.",
+        "data": {
+          "blower_entity": "Spínač napájania dúchadla"
+        },
+        "title": "Spínač napájania dúchadla",
+        "data_description": {
+          "blower_entity": "Vyberte konkrétnu switch entitu, ktorá napája dúchadlo. Ostatné výstupy toho istého zariadenia sa neovládajú."
+        }
       }
     },
     "error": {
       "threshold_order": "Prahová hodnota vysokého objemu musí byť aspoň rovná bežnej.",
       "device_not_found": "Vybrané zariadenie už v Home Assistant neexistuje.",
-      "blower_switch_missing": "Zariadenie dúchadla nemá entitu switch. Vyberte zariadenie s ovládateľným spínačom.",
-      "blower_switch_ambiguous": "Zariadenie dúchadla má viac spínačov. Vyberte samostatnú zásuvku s jedným spínačom.",
       "pump_power_missing": "Zariadenie čerpadla nemá výkonový senzor s device_class power.",
       "pump_power_ambiguous": "Zariadenie čerpadla má viac výkonových senzorov. Vyberte samostatnú zásuvku s jedným výkonovým senzorom.",
-      "airflow_required": "Automatické prevzdušňovanie vyžaduje prietok dúchadla väčší ako nula."
+      "airflow_required": "Automatické prevzdušňovanie vyžaduje prietok dúchadla väčší ako nula.",
+      "blower_entity_removed": "Pôvodne vybraná switch entita bola odstránená. Vyberte spínač znova; náhrada sa nevolí automaticky.",
+      "blower_selection_required": "Vyberte konkrétny spínač napájania dúchadla. Staré zariadenie nemá práve jeden platný spínač alebo výber chýba.",
+      "blower_entity_missing": "Vybraná entita neexistuje. Vyberte dostupnú switch entitu.",
+      "blower_entity_not_switch": "Vybraná entita musí patriť do domény switch.",
+      "blower_entity_disabled": "Vybraná switch entita je deaktivovaná v registri Home Assistant. Aktivujte ju alebo vyberte inú."
     },
-    "flow_title": "{name}"
+    "flow_title": "{name}",
+    "abort": {
+      "reconfigure_successful": "Spínač dúchadla bol aktualizovaný."
+    }
   },
   "options": {
     "step": {
@@ -236,26 +252,29 @@
       },
       "devices": {
         "title": "Napájacie zariadenia",
-        "description": "Zmeňte zásuvky priradené k dúchadlu a čerpadlám. Po uložení sa integrácia automaticky znovu načíta.",
+        "description": "Zmeňte konkrétny spínač dúchadla a zariadenia čerpadiel. Po uložení sa integrácia znovu načíta.",
         "data": {
-          "blower_device_id": "Zásuvka dúchadla",
           "pump_device_id": "Zásuvka odtokového čerpadla",
-          "inlet_device_id": "Zásuvka prítokového čerpadla (voliteľné)"
+          "inlet_device_id": "Zásuvka prítokového čerpadla (voliteľné)",
+          "blower_entity": "Spínač napájania dúchadla"
         },
         "data_description": {
-          "blower_device_id": "Musí poskytovať práve jeden ovládateľný spínač.",
           "pump_device_id": "Musí poskytovať práve jeden výkonový senzor; spínač sa neovláda.",
-          "inlet_device_id": "Voliteľné zariadenie s jedným výkonovým senzorom; jeho spínač sa neovláda."
+          "inlet_device_id": "Voliteľné zariadenie s jedným výkonovým senzorom; jeho spínač sa neovláda.",
+          "blower_entity": "Vyberte konkrétnu switch entitu, ktorá napája dúchadlo. Ostatné výstupy toho istého zariadenia sa neovládajú."
         }
       }
     },
     "error": {
       "threshold_order": "Prahová hodnota vysokého objemu musí byť aspoň rovná bežnej.",
       "device_not_found": "Vybrané zariadenie už v Home Assistant neexistuje.",
-      "blower_switch_missing": "Zariadenie dúchadla nemá entitu switch. Vyberte zariadenie s ovládateľným spínačom.",
-      "blower_switch_ambiguous": "Zariadenie dúchadla má viac spínačov. Vyberte samostatnú zásuvku s jedným spínačom.",
       "pump_power_missing": "Zariadenie čerpadla nemá výkonový senzor s device_class power.",
-      "pump_power_ambiguous": "Zariadenie čerpadla má viac výkonových senzorov. Vyberte samostatnú zásuvku s jedným výkonovým senzorom."
+      "pump_power_ambiguous": "Zariadenie čerpadla má viac výkonových senzorov. Vyberte samostatnú zásuvku s jedným výkonovým senzorom.",
+      "blower_entity_removed": "Pôvodne vybraná switch entita bola odstránená. Vyberte spínač znova; náhrada sa nevolí automaticky.",
+      "blower_selection_required": "Vyberte konkrétny spínač napájania dúchadla. Staré zariadenie nemá práve jeden platný spínač alebo výber chýba.",
+      "blower_entity_missing": "Vybraná entita neexistuje. Vyberte dostupnú switch entitu.",
+      "blower_entity_not_switch": "Vybraná entita musí patriť do domény switch.",
+      "blower_entity_disabled": "Vybraná switch entita je deaktivovaná v registri Home Assistant. Aktivujte ju alebo vyberte inú."
     }
   },
   "entity": {

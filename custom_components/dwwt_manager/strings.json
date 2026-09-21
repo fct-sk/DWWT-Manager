@@ -40,17 +40,17 @@
       "blower": {
         "title": "Blower",
         "data": {
-          "blower_device_id": "Blower power device",
           "blower_power_w": "Rated power (W, optional)",
           "blower_airflow_l_min": "Airflow (L/min, optional)",
-          "blower_pressure_mbar": "Pressure (mbar, optional)"
+          "blower_pressure_mbar": "Pressure (mbar, optional)",
+          "blower_entity": "Blower power switch"
         },
-        "description": "Select the Home Assistant entity that controls only the aeration blower. Nameplate values are optional and informational.",
+        "description": "Choose the blower power switch. Rated power, airflow and pressure remain blower parameters, not measurement sensor references.",
         "data_description": {
-          "blower_device_id": "Select the complete smart-plug device. The integration automatically discovers its blower power switch.",
           "blower_power_w": "Optional rated electrical input from the blower nameplate, in watts; informational only.",
           "blower_airflow_l_min": "Optional rated airflow from the blower nameplate, in liters per minute; informational only.",
-          "blower_pressure_mbar": "Optional rated operating pressure, in millibars; informational only."
+          "blower_pressure_mbar": "Optional rated operating pressure, in millibars; informational only.",
+          "blower_entity": "Select the switch entity that powers the blower. Other outputs of the same device are not controlled."
         }
       },
       "pump": {
@@ -152,16 +152,32 @@
         },
         "title": "Operating mode selection",
         "description": "Choose whether you select one of the four fixed modes or let AUTO select it from configured Home Assistant signals."
+      },
+      "reconfigure": {
+        "description": "Select the blower output. If the entity was removed or a legacy device is ambiguous, the integration never chooses a replacement switch automatically.",
+        "data": {
+          "blower_entity": "Blower power switch"
+        },
+        "title": "Blower power switch",
+        "data_description": {
+          "blower_entity": "Select the switch entity that powers the blower. Other outputs of the same device are not controlled."
+        }
       }
     },
     "error": {
       "threshold_order": "The high volume threshold must be at least the normal threshold.",
       "device_not_found": "The selected device no longer exists in Home Assistant.",
-      "blower_switch_missing": "The blower device has no switch entity. Select a device with a controllable switch.",
-      "blower_switch_ambiguous": "The blower device has multiple switches. Select a dedicated smart plug with one switch.",
       "pump_power_missing": "The pump device has no power sensor with device_class power.",
       "pump_power_ambiguous": "The pump device has multiple power sensors. Select a dedicated smart plug with one power sensor.",
-      "airflow_required": "Automatic aeration requires a blower airflow greater than zero."
+      "airflow_required": "Automatic aeration requires a blower airflow greater than zero.",
+      "blower_entity_removed": "The originally selected switch entity was removed. Select a switch again; replacements are never chosen automatically.",
+      "blower_selection_required": "Select the specific blower power switch. The legacy device has no unique valid switch, or no output is selected.",
+      "blower_entity_missing": "The selected entity does not exist. Select an available switch entity.",
+      "blower_entity_not_switch": "The selected entity must belong to the switch domain.",
+      "blower_entity_disabled": "The selected switch entity is disabled in the Home Assistant registry. Enable it or select another output."
+    },
+    "abort": {
+      "reconfigure_successful": "Blower power switch updated."
     }
   },
   "options": {
@@ -236,26 +252,29 @@
       },
       "devices": {
         "title": "Power devices",
-        "description": "Change the smart plugs assigned to the blower and pumps. The integration reloads automatically after saving.",
+        "description": "Change the specific blower switch and pump devices. The integration reloads after saving.",
         "data": {
-          "blower_device_id": "Blower power device",
           "pump_device_id": "Outlet pump power device",
-          "inlet_device_id": "Inlet pump power device (optional)"
+          "inlet_device_id": "Inlet pump power device (optional)",
+          "blower_entity": "Blower power switch"
         },
         "data_description": {
-          "blower_device_id": "Must expose exactly one controllable switch.",
           "pump_device_id": "Must expose exactly one power sensor; its switch is never controlled.",
-          "inlet_device_id": "Optional device with one power sensor; its switch is never controlled."
+          "inlet_device_id": "Optional device with one power sensor; its switch is never controlled.",
+          "blower_entity": "Select the switch entity that powers the blower. Other outputs of the same device are not controlled."
         }
       }
     },
     "error": {
       "threshold_order": "The high volume threshold must be at least the normal threshold.",
       "device_not_found": "The selected device no longer exists in Home Assistant.",
-      "blower_switch_missing": "The blower device has no switch entity. Select a device with a controllable switch.",
-      "blower_switch_ambiguous": "The blower device has multiple switches. Select a dedicated smart plug with one switch.",
       "pump_power_missing": "The pump device has no power sensor with device_class power.",
-      "pump_power_ambiguous": "The pump device has multiple power sensors. Select a dedicated smart plug with one power sensor."
+      "pump_power_ambiguous": "The pump device has multiple power sensors. Select a dedicated smart plug with one power sensor.",
+      "blower_entity_removed": "The originally selected switch entity was removed. Select a switch again; replacements are never chosen automatically.",
+      "blower_selection_required": "Select the specific blower power switch. The legacy device has no unique valid switch, or no output is selected.",
+      "blower_entity_missing": "The selected entity does not exist. Select an available switch entity.",
+      "blower_entity_not_switch": "The selected entity must belong to the switch domain.",
+      "blower_entity_disabled": "The selected switch entity is disabled in the Home Assistant registry. Enable it or select another output."
     }
   },
   "entity": {

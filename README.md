@@ -21,13 +21,19 @@ Copy `custom_components/dwwt_manager` into the Home Assistant configuration dire
 
 ## Configuration
 
-The three equipment assignments use Home Assistant device selection rather than entity IDs. They can be changed later under **Configure → Power devices**. Dedicated smart plugs are recommended: the blower device must expose one switch, while each pump device must expose one sensor with the `power` device class.
+Select the specific **Blower power switch** (a switch entity), even when its HA device has multiple outputs. Only that output is controlled. Pump assignments remain device-based and require one power-class sensor. Assignments can be changed under **Configure → Power devices**; **Reconfigure** also repairs a missing blower selection.
+
+The selected blower entity is authoritative. Its owning HA device is derived context, and a switch without an owning device is supported. Registered switches retain their registry identity across entity-ID renames. Removal or disabling requires reconfiguration; another output is never selected automatically. Live unregistered switches can be controlled, but renaming them requires selecting the new entity explicitly.
+
+Legacy device-based blower assignments migrate automatically only when exactly one valid switch exists. Zero or multiple valid switches require an explicit selection through **Reconfigure**. A preserved historical switch selection is retained.
+
+Control and measurements are separate. A device-level Power sensor may measure several outputs and must not be labelled as blower-only. The passive MeasurementBinding model records quantity, scope (device_total, blower_only, shared_circuit, unknown) and scope source; unknown is the default. No blower energy monitoring or measurement-scope configuration UI is added, and missing measurement sensors do not block blower control.
 
 The flow asks for:
 
 1. Plant identity, tank volume, and nominal design EO.
 2. Occupants and estimated current EO. Zero means unknown; these values are not silently equated.
-3. A Home Assistant device representing the blower smart plug; its single switch entity is discovered automatically.
+3. The specific switch entity that powers the blower, plus its rated parameters.
 4. A device representing the outlet-pump smart plug; its power sensor is discovered automatically, while its switch is never controlled.
 5. An optional inlet-pump smart-plug device and optional `alarm_control_panel`; the inlet power sensor is discovered automatically.
 6. AUTO signals and thresholds.
@@ -109,7 +115,7 @@ ruff check .
 - Volume is cycle-based estimation, not direct metering.
 - Inlet-pump activity is monitored only in this release.
 - No dissolved oxygen, pH, ORP, turbidity, weather, anomaly detection, maintenance reminders, multiple tanks/blowers, or equipment energy accounting yet.
-- Editing entity assignments and plant identity currently requires removing/re-adding the entry; numeric runtime tuning belongs in the options flow.
+- Blower and pump assignments can be edited in options; the blower also has a reconfiguration flow. Plant identity changes still require removing/re-adding the entry.
 - The integration cannot replace manufacturer safety controls or confirm treatment performance.
 
 The manager, persistent model, decision function, schedule map, and entity platforms are separate so direct meters, manufacturer presets, additional equipment, and more sophisticated documented load models can be added without rewriting the control engine.

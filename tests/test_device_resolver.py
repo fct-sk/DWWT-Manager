@@ -25,16 +25,6 @@ def hass():
     return SimpleNamespace(states=SimpleNamespace(get=lambda entity_id: None))
 
 
-def test_blower_device_resolves_single_switch(monkeypatch, hass):
-    monkeypatch.setattr(
-        "custom_components.dwwt_manager.device_resolver._entries_for_device",
-        lambda hass, device_id: [entry("switch.blower"), entry("sensor.blower_power", "power")],
-    )
-    resolved = async_resolve_device(hass, "blower-device", DeviceRole.BLOWER)
-    assert resolved.switch_entity == "switch.blower"
-    assert resolved.power_sensor == "sensor.blower_power"
-
-
 def test_pump_device_resolves_power_but_never_requires_switch(monkeypatch, hass):
     monkeypatch.setattr(
         "custom_components.dwwt_manager.device_resolver._entries_for_device",
