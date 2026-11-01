@@ -16,6 +16,9 @@ from homeassistant.helpers.selector import (
 
 from .const import *  # noqa: F403 - config schemas intentionally mirror constants
 from .device_resolver import DeviceResolutionError, DeviceRole, async_resolve_blower, async_resolve_device
+from .household import (
+    CONF_HOUSEHOLD_PROFILE, HouseholdLoadProfile, HouseholdProfileError, OccupancyPattern,
+)
 
 
 def _num(minimum: float = 0, maximum: float = 100000, step: float = 1) -> NumberSelector:
@@ -48,11 +51,23 @@ GENERAL_SCHEMA = vol.Schema({
     vol.Required(CONF_NOMINAL_EO, default=6): _num(0.1, 100, 0.1),
     vol.Required(CONF_TANK_VOLUME, default=3000): _num(1, 100000, 1),
 })
-HOUSEHOLD_SCHEMA = vol.Schema({
-    vol.Optional(CONF_OCCUPANTS, default=0): _num(0, 100, 1),
-    vol.Optional(CONF_ESTIMATED_EO, default=0): _num(0, 100, 0.1),
-    vol.Optional(CONF_LOAD_FACTOR, default=1): _num(0, 10, 0.1),
-})
+def household_schema(values: dict[str, Any] | None = None) -> vol.Schema:
+    """Optional numeric fields use suggestions so clearing them really means unknown."""
+    values = values or {}
+    fields: dict[Any, Any] = {}
+    for key in ("typical_occupants", "peak_occupants"):
+        description = {"suggested_value": values[key]} if values.get(key) is not None else {}
+        fields[vol.Optional(key, description=description)] = NumberSelector(
+            NumberSelectorConfig(min=0, step=1, mode=NumberSelectorMode.BOX)
+        )
+    fields[vol.Required("occupancy_pattern", default=values.get("occupancy_pattern", "unknown"))] = (
+        SelectSelector(SelectSelectorConfig(
+            options=[pattern.value for pattern in OccupancyPattern],
+            mode=SelectSelectorMode.DROPDOWN, translation_key="occupancy_pattern",
+        ))
+    )
+    return vol.Schema(fields)
+
 BLOWER_SCHEMA = vol.Schema({
     vol.Required(CONF_BLOWER_ENTITY): _entity(["switch"]),
     vol.Optional(CONF_BLOWER_POWER, default=0): _num(),
@@ -105,7 +120,7 @@ def pack_schedules(values: dict[str, Any]) -> dict[str, dict[str, int]]:
 
 
 class DwwtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 5
+    VERSION = 6
 
     def __init__(self) -> None:
         self._data: dict[str, Any] = {}
@@ -114,7 +129,18 @@ class DwwtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self._step("user", GENERAL_SCHEMA, user_input, "household")
 
     async def async_step_household(self, user_input=None) -> ConfigFlowResult:
-        return await self._step("household", HOUSEHOLD_SCHEMA, user_input, "blower")
+        errors = {}
+        if user_input is not None:
+            try:
+                profile = HouseholdLoadProfile.from_config(user_input)
+            except HouseholdProfileError as err:
+                errors["base"] = err.translation_key
+            else:
+                self._data[CONF_HOUSEHOLD_PROFILE] = profile.as_config()
+                return await self.async_step_blower()
+        return self.async_show_form(
+            step_id="household", data_schema=household_schema(user_input), errors=errors,
+        )
 
     async def async_step_blower(self, user_input=None) -> ConfigFlowResult:
         if user_input is not None:
@@ -209,7 +235,33 @@ class DwwtOptionsFlow(OptionsFlowWithReload):
     """Edit runtime settings and schedules; setup identity remains entry data."""
 
     async def async_step_init(self, user_input=None) -> ConfigFlowResult:
-        return self.async_show_menu(step_id="init", menu_options=["devices", "settings", "schedules"])
+        return self.async_show_menu(step_id="init", menu_options=["devices", "household", "settings", "schedules"])
+
+    async def async_step_household(self, user_input=None) -> ConfigFlowResult:
+        values = {**self.config_entry.data, **self.config_entry.options}
+        stored = {}
+        errors = {}
+        if user_input is None:
+            try:
+                stored = HouseholdLoadProfile.from_config(values.get(CONF_HOUSEHOLD_PROFILE)).as_config()
+            except HouseholdProfileError as err:
+                errors["base"] = err.translation_key
+        if user_input is not None:
+            try:
+                profile = HouseholdLoadProfile.from_config(user_input)
+            except HouseholdProfileError as err:
+                errors["base"] = err.translation_key
+            else:
+                # Replace the whole profile; preserve all unrelated settings.
+                return self.async_create_entry(data={
+                    **self.config_entry.options,
+                    CONF_HOUSEHOLD_PROFILE: profile.as_config(),
+                })
+        return self.async_show_form(
+            step_id="household",
+            data_schema=household_schema(stored if user_input is None else user_input),
+            errors=errors,
+        )
 
     async def async_step_devices(self, user_input=None) -> ConfigFlowResult:
         values = {**self.config_entry.data, **self.config_entry.options}

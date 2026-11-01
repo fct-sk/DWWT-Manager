@@ -317,7 +317,7 @@ async def test_reconfigure_repairs_unresolved_selection_without_losing_other_dat
 
 @pytest.mark.parametrize("count", [0, 1, 2])
 @pytest.mark.parametrize("source_version", [3, 4])
-async def test_entry_migration_to_v5(equipment, count, source_version):
+async def test_entry_migration_to_v6(equipment, count, source_version):
     hass, registry = equipment
     for i in range(count):
         registry.add(f"switch.output_{i}")
@@ -327,10 +327,12 @@ async def test_entry_migration_to_v5(equipment, count, source_version):
     )
     assert await async_migrate_entry(hass, entry)
     update = hass.config_entries.async_update_entry.call_args.kwargs
-    assert update["version"] == 5
-    assert update["options"] == entry.options
+    assert update["version"] == 6
+    assert update["options"]["load_factor"] == 1.2
+    assert update["options"]["household_profile"]["typical_occupants"] == 4
     assert update["data"]["nominal_eo"] == 6
-    assert update["data"]["occupants"] == 2
+    assert "occupants" not in update["data"]
+    assert "occupants" not in update["options"]
     assert update["data"]["estimated_eo"] == 1.5
     assert "household_profile" not in update["data"]
     assert update["data"]["blower_entity"] == ("switch.output_0" if count == 1 else None)
@@ -413,7 +415,7 @@ async def test_oldest_migration_retains_explicit_blower(equipment):
     )
     assert await async_migrate_entry(hass, entry)
     update = hass.config_entries.async_update_entry.call_args.kwargs
-    assert update["version"] == 5
+    assert update["version"] == 6
     assert update["data"]["blower_entity"] == "switch.z"
     assert update["data"]["pump_device_id"] == "pump"
     assert update["data"]["estimated_eo"] == 2

@@ -23,17 +23,17 @@
         }
       },
       "household": {
-        "title": "Domácnosť a zaťaženie",
-        "description": "Počet obyvateľov a odhad aktuálneho zaťaženia v EO sú oddelené od nominálnej projektovanej kapacity ČOV. Nula znamená neznámu hodnotu.",
+        "title": "Profil domácnosti",
+        "description": "Voliteľný profil domácnosti. Nemení prevádzkový režim ani prevzdušňovanie.",
         "data": {
-          "occupants": "Počet obyvateľov",
-          "estimated_eo": "Odhad aktuálneho zaťaženia (EO)",
-          "load_factor": "Ručný faktor zaťaženia"
+          "peak_occupants": "Špičkový počet osôb (voliteľné)",
+          "typical_occupants": "Typický počet osôb",
+          "occupancy_pattern": "Spôsob obývania"
         },
         "data_description": {
-          "occupants": "Skutočný počet pravidelných obyvateľov. Nula znamená neznámu hodnotu. Nenahrádza nominálnu kapacitu ČOV (nominal_eo).",
-          "estimated_eo": "Voliteľný odhad aktuálneho organického alebo hydraulického zaťaženia v EO. Nula znamená neznámu hodnotu. Je oddelený od nominálnej kapacity ČOV a výpočet prevzdušňovania V1 ho nepoužíva.",
-          "load_factor": "Voliteľný násobiteľ relatívneho zaťaženia. Verzia 0.1 ho uchováva pre budúce modely a zatiaľ ho v AUTO nepoužíva."
+          "peak_occupants": "Typický maximálny CELKOVÝ počet osôb, nie hostia navyše ani pevný limit. Voliteľné; nesmie byť nižší než známy typický počet.",
+          "typical_occupants": "Počet osôb počas používania objektu, nie priemer zahŕňajúci neprítomnosť. Prázdne znamená neznáme; nula je skutočná nula. Počet nie je obmedzený nominálnym EO.",
+          "occupancy_pattern": "Typické používanie, nie kalendár, aktuálna prítomnosť ani prevádzkový režim."
         }
       },
       "blower": {
@@ -173,7 +173,12 @@
       "blower_selection_required": "Vyberte konkrétny spínač napájania dúchadla. Staré zariadenie nemá práve jeden platný spínač alebo výber chýba.",
       "blower_entity_missing": "Vybraná entita neexistuje. Vyberte dostupnú switch entitu.",
       "blower_entity_not_switch": "Vybraná entita musí patriť do domény switch.",
-      "blower_entity_disabled": "Vybraná switch entita je deaktivovaná v registri Home Assistant. Aktivujte ju alebo vyberte inú."
+      "blower_entity_disabled": "Vybraná switch entita je deaktivovaná v registri Home Assistant. Aktivujte ju alebo vyberte inú.",
+      "household_peak_below_typical": "Špičkový počet nesmie byť nižší než typický počet.",
+      "household_schema_version": "Nepodporovaná verzia schémy profilu domácnosti.",
+      "household_invalid_pattern": "Vyberte platný spôsob obývania.",
+      "household_invalid_profile": "Neplatný uložený profil. Zadajte platný profil domácnosti.",
+      "household_invalid_count": "Počty musia byť nezáporné celé čísla alebo prázdne."
     },
     "flow_title": "{name}",
     "abort": {
@@ -187,7 +192,8 @@
         "menu_options": {
           "settings": "AUTO a čerpadlo",
           "schedules": "Programy dúchadla",
-          "devices": "Napájacie zariadenia"
+          "devices": "Napájacie zariadenia",
+          "household": "Profil domácnosti"
         }
       },
       "settings": {
@@ -263,6 +269,20 @@
           "inlet_device_id": "Voliteľné zariadenie s jedným výkonovým senzorom; jeho spínač sa neovláda.",
           "blower_entity": "Vyberte konkrétnu switch entitu, ktorá napája dúchadlo. Ostatné výstupy toho istého zariadenia sa neovládajú."
         }
+      },
+      "household": {
+        "title": "Profil domácnosti",
+        "description": "Voliteľný profil domácnosti. Nemení prevádzkový režim ani prevzdušňovanie.",
+        "data": {
+          "peak_occupants": "Špičkový počet osôb (voliteľné)",
+          "typical_occupants": "Typický počet osôb",
+          "occupancy_pattern": "Spôsob obývania"
+        },
+        "data_description": {
+          "peak_occupants": "Typický maximálny CELKOVÝ počet osôb, nie hostia navyše ani pevný limit. Voliteľné; nesmie byť nižší než známy typický počet.",
+          "typical_occupants": "Počet osôb počas používania objektu, nie priemer zahŕňajúci neprítomnosť. Prázdne znamená neznáme; nula je skutočná nula. Počet nie je obmedzený nominálnym EO.",
+          "occupancy_pattern": "Typické používanie, nie kalendár, aktuálna prítomnosť ani prevádzkový režim."
+        }
       }
     },
     "error": {
@@ -274,7 +294,12 @@
       "blower_selection_required": "Vyberte konkrétny spínač napájania dúchadla. Staré zariadenie nemá práve jeden platný spínač alebo výber chýba.",
       "blower_entity_missing": "Vybraná entita neexistuje. Vyberte dostupnú switch entitu.",
       "blower_entity_not_switch": "Vybraná entita musí patriť do domény switch.",
-      "blower_entity_disabled": "Vybraná switch entita je deaktivovaná v registri Home Assistant. Aktivujte ju alebo vyberte inú."
+      "blower_entity_disabled": "Vybraná switch entita je deaktivovaná v registri Home Assistant. Aktivujte ju alebo vyberte inú.",
+      "household_peak_below_typical": "Špičkový počet nesmie byť nižší než typický počet.",
+      "household_schema_version": "Nepodporovaná verzia schémy profilu domácnosti.",
+      "household_invalid_pattern": "Vyberte platný spôsob obývania.",
+      "household_invalid_profile": "Neplatný uložený profil. Zadajte platný profil domácnosti.",
+      "household_invalid_count": "Počty musia byť nezáporné celé čísla alebo prázdne."
     }
   },
   "entity": {
@@ -407,6 +432,14 @@
         "normal": "Normálna prevádzka",
         "heavy_load": "Vyššie zaťaženie",
         "low_load": "Nízke zaťaženie"
+      }
+    },
+    "occupancy_pattern": {
+      "options": {
+        "intermittent": "Príležitostné",
+        "seasonal": "Sezónne",
+        "unknown": "Neznáme",
+        "permanent": "Trvalé"
       }
     }
   }

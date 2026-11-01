@@ -30,6 +30,7 @@ from .device_resolver import (
     async_resolve_blower,
     async_resolve_config,
 )
+from .household import HouseholdProfileError, migrate_household_config
 from .manager import DwwtManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -94,7 +95,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate device assignments and beta5 operating-mode schedules."""
+    """Migrate equipment, mode schedules and the independent household profile."""
     data = dict(entry.data)
     options = dict(entry.options)
     version = entry.version
@@ -135,6 +136,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if version < 5:
         data, options = async_migrate_blower_config(hass, data, options)
         version = 5
+
+    if version < 6:
+        try:
+            data, options = migrate_household_config(data, options)
+        except HouseholdProfileError as err:
+            _LOGGER.error("Cannot migrate household profile: %s", err.translation_key)
+            return False
+        version = 6
 
     hass.config_entries.async_update_entry(entry, data=data, options=options, version=version)
     _LOGGER.info("Migrated DWWT Manager config entry %s to version %s", entry.entry_id, version)

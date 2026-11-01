@@ -24,17 +24,17 @@
         }
       },
       "household": {
-        "title": "Household and load",
-        "description": "Occupant count and estimated current load (EO) are separate from nominal plant design capacity. Leave an unknown value at zero.",
+        "title": "Household profile",
+        "description": "Optional household profile. Does not change operating modes or aeration.",
         "data": {
-          "occupants": "Occupants",
-          "estimated_eo": "Estimated current load (EO)",
-          "load_factor": "Manual load factor"
+          "peak_occupants": "Peak occupants (optional)",
+          "typical_occupants": "Typical occupants",
+          "occupancy_pattern": "Occupancy pattern"
         },
         "data_description": {
-          "occupants": "Actual number of regular occupants. Zero means unknown. This does not replace nominal plant capacity (nominal_eo).",
-          "estimated_eo": "Optional estimate of current organic/hydraulic load in EO. Zero means unknown. This is separate from nominal plant capacity and is not used by the V1 aeration calculation.",
-          "load_factor": "Optional manual multiplier describing relative load. Version 0.1 stores it for future load models and does not apply it to AUTO yet."
+          "peak_occupants": "Typical maximum TOTAL occupancy, not extra guests or a hard limit. Optional; at least typical occupants when both are known.",
+          "typical_occupants": "People while the property is in use, not an average including absence. Blank means unknown; zero is a known zero. Not limited by nominal EO.",
+          "occupancy_pattern": "Typical use, not a calendar, current presence or operating mode."
         }
       },
       "blower": {
@@ -174,7 +174,12 @@
       "blower_selection_required": "Select the specific blower power switch. The legacy device has no unique valid switch, or no output is selected.",
       "blower_entity_missing": "The selected entity does not exist. Select an available switch entity.",
       "blower_entity_not_switch": "The selected entity must belong to the switch domain.",
-      "blower_entity_disabled": "The selected switch entity is disabled in the Home Assistant registry. Enable it or select another output."
+      "blower_entity_disabled": "The selected switch entity is disabled in the Home Assistant registry. Enable it or select another output.",
+      "household_peak_below_typical": "Peak occupants must be at least typical occupants.",
+      "household_schema_version": "Unsupported household profile schema version.",
+      "household_invalid_pattern": "Select a valid occupancy pattern.",
+      "household_invalid_profile": "Invalid stored profile. Enter a valid household profile.",
+      "household_invalid_count": "Counts must be non-negative whole numbers or blank."
     },
     "abort": {
       "reconfigure_successful": "Blower power switch updated."
@@ -187,7 +192,8 @@
         "menu_options": {
           "settings": "AUTO and pump settings",
           "schedules": "Blower schedules",
-          "devices": "Power devices"
+          "devices": "Power devices",
+          "household": "Household profile"
         }
       },
       "settings": {
@@ -263,6 +269,20 @@
           "inlet_device_id": "Optional device with one power sensor; its switch is never controlled.",
           "blower_entity": "Select the switch entity that powers the blower. Other outputs of the same device are not controlled."
         }
+      },
+      "household": {
+        "title": "Household profile",
+        "description": "Optional household profile. Does not change operating modes or aeration.",
+        "data": {
+          "peak_occupants": "Peak occupants (optional)",
+          "typical_occupants": "Typical occupants",
+          "occupancy_pattern": "Occupancy pattern"
+        },
+        "data_description": {
+          "peak_occupants": "Typical maximum TOTAL occupancy, not extra guests or a hard limit. Optional; at least typical occupants when both are known.",
+          "typical_occupants": "People while the property is in use, not an average including absence. Blank means unknown; zero is a known zero. Not limited by nominal EO.",
+          "occupancy_pattern": "Typical use, not a calendar, current presence or operating mode."
+        }
       }
     },
     "error": {
@@ -274,7 +294,12 @@
       "blower_selection_required": "Select the specific blower power switch. The legacy device has no unique valid switch, or no output is selected.",
       "blower_entity_missing": "The selected entity does not exist. Select an available switch entity.",
       "blower_entity_not_switch": "The selected entity must belong to the switch domain.",
-      "blower_entity_disabled": "The selected switch entity is disabled in the Home Assistant registry. Enable it or select another output."
+      "blower_entity_disabled": "The selected switch entity is disabled in the Home Assistant registry. Enable it or select another output.",
+      "household_peak_below_typical": "Peak occupants must be at least typical occupants.",
+      "household_schema_version": "Unsupported household profile schema version.",
+      "household_invalid_pattern": "Select a valid occupancy pattern.",
+      "household_invalid_profile": "Invalid stored profile. Enter a valid household profile.",
+      "household_invalid_count": "Counts must be non-negative whole numbers or blank."
     }
   },
   "entity": {
@@ -407,6 +432,14 @@
         "normal": "Normal operation",
         "heavy_load": "Higher load",
         "low_load": "Low load"
+      }
+    },
+    "occupancy_pattern": {
+      "options": {
+        "intermittent": "Intermittent",
+        "seasonal": "Seasonal",
+        "unknown": "Unknown",
+        "permanent": "Permanent"
       }
     }
   }

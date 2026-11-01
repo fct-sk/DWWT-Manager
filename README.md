@@ -32,14 +32,24 @@ Control and measurements are separate. A device-level Power sensor may measure s
 The flow asks for:
 
 1. Plant identity, tank volume, and nominal design EO.
-2. Occupants and estimated current EO. Zero means unknown; these values are not silently equated.
+2. Optional household profile: typical occupants, occupancy pattern, and optional peak occupants.
 3. The specific switch entity that powers the blower, plus its rated parameters.
 4. A device representing the outlet-pump smart plug; its power sensor is discovered automatically, while its switch is never controlled.
 5. An optional inlet-pump smart-plug device and optional `alarm_control_panel`; the inlet power sensor is discovered automatically.
 6. AUTO signals and thresholds.
 7. Editable ON/OFF durations for each manual schedule.
 
-Manual ON/OFF values are configurable for all four modes. In automatic aeration V1, nominal_eo means the plant's rated/design capacity in equivalent inhabitants (EO), not current occupant count or current load. The occupants and estimated_eo fields are separate and do not enter the V1 calculation.
+Manual ON/OFF values are configurable for all four modes. In automatic aeration V1, nominal_eo means the plant's rated/design capacity in equivalent inhabitants (EO), not current occupant count or current load. The household profile and legacy estimated_eo/load_factor values do not enter the V1 calculation.
+
+### Household profile (configuration version 6)
+
+The optional household_profile object has schema_version 1. Typical occupants means people while the property is in use, not an average including absence. Occupancy pattern is permanent, intermittent, seasonal, or unknown; it does not define a calendar. Peak occupants is the typical maximum total occupancy, not extra guests or a hard limit. Counts may exceed nominal_eo.
+
+Blank counts are unknown (null); zero is a known zero. Counts must be non-negative integers and a known peak must be at least the known typical count. A complete profile has a known typical count and a non-unknown pattern; completeness never enables control. Configure → Household profile replaces the whole profile and preserves other options.
+
+Migration runs after OPTION B version 5. Existing valid profiles take priority over legacy occupants; options profiles override data profiles as whole objects, never field by field. Without a profile, legacy occupants uses options before data: positive counts migrate, legacy zero becomes null, pattern becomes unknown and peak remains null. Legacy occupants is removed only after successful conversion; estimated_eo and load_factor retain their original values and locations. Invalid profiles fail migration without saving partial results. Profile schema version, config-entry version and release version are separate.
+
+This layer does not change AUTO, operating modes or aeration. Passive observation/ActualLoadEstimate contracts generate no measurements or estimates. Fixed future alarm semantics: armed_night means occupied/night operation, armed_away means absent; neither defines a people count, wastewater volume or mode. Missing data is not zero activity. No estimator, learning, MQTT or controller implementation is included.
 
 Operating mode represents current relative load independently of nominal capacity: NORMAL uses factor 1.0, LOW_LOAD 1/3, and HEAVY_LOAD 1.25. ECO uses a separate fixed 10/470-minute baseline. The factors and scaling are V1 heuristic assumptions.
 
